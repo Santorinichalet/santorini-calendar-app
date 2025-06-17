@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>تقويم حجز شاليه سانتوريني</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+    * { font-family: 'Tajawal', sans-serif !important; }
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom, #fffdfc, #f2e9dd);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+    }
+    header { text-align: center; margin-bottom: 10px; }
+    header img { max-width: 180px; border-radius: 20px; }
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 10px 0;
+    }
+    .controls button {
+      font-size: 16px;
+      padding: 5px 15px;
+      border: none;
+      border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .day {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 4px;
+      text-align: center;
+      font-size: 14px;
+      cursor: pointer;
+      position: relative;
+      min-height: 60px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .booked { background: #ffdddd !important; }
+    .deposit { background: #fff0cc !important; }
+    .price-label {
+      font-size: 12px;
+      color: #333;
+      position: absolute;
+      bottom: 2px;
+      left: 4px;
+    }
+    .moon {
+      font-size: 16px;
+      position: absolute;
+      top: 34px;
+      left: 50%;
+      transform: translateX(-50%);
+      line-height: 1;
+    }
+  
+    .controls button:hover {
+      background-color: #45a049;
+      transform: scale(1.05);
+      transition: all 0.3s ease;
+    }
+
+    .day:hover {
+      box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .popup {
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -60%); }
+      to { opacity: 1; transform: translate(-50%, -50%); }
+    }
+
+    #monthYear {
+      font-size: 20px;
+      font-weight: bold;
+      padding: 5px 15px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+
+    header img {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+
+
+h3 {
+  background: linear-gradient(to right, #8e44ad, #024488);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 5px;
+  background: #f0ebe5;
+  padding: 5px 0;
+  border-radius: 10px;
+  font-weight: bold;
+  color: #555;
+  text-align: center;
+  font-size: 14px;
+}
+.today {
+  border: 2px solid #024488;
+  box-shadow: 0 0 6px rgba(52, 152, 219, 0.4);
+}
+
+
+header img {
+  max-width: 140px;
+  margin-bottom: 6px;
+}
+.controls {
+  margin: 6px 0;
+  gap: 10px;
+}
+.weekdays {
+  font-size: 13px;
+  padding: 4px 0;
+}
+.day {
+  font-size: 13px;
+  min-height: 52px;
+}
+
+
+.popup {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.today {
+  border: 2px solid #28a8e0 !important;
+  box-shadow: 0 0 12px rgba(40, 168, 224, 0.5);
+}
+.booked {
+  box-shadow: 0 0 10px rgba(255, 100, 100, 0.4) !important;
+}
+
+.controls button {
+  background-color: #024488 !important;
+}
+.controls button:hover {
+  background-color: #01376f !important;
+}
+</style>
+<link href="manifest.json" rel="manifest"/>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+  }
+</script>
+</head>
+<body>
+<header>
+<img alt="Santorini Logo" src="https://i.ibb.co/1GHzZZfj/Santorini-Logo.png"/>
+</header>
+<div class="controls">
+<button onclick="changeMonth(-1)">⬅️ السابق</button>
+<div id="monthYear"></div>
+<button onclick="changeMonth(1)">التالي ➡️</button>
+</div>
+<div class="weekdays">
+<div>الأحد</div>
+<div>الاثنين</div>
+<div>الثلاثاء</div>
+<div>الأربعاء</div>
+<div>الخميس</div>
+<div>الجمعة</div>
+<div>السبت</div>
+</div>
+<div class="calendar" id="calendar"></div>
+<div class="popup" id="popup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px 15px; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.25); z-index:9999; width:92%; max-width:360px; font-family: 'Cairo', sans-serif;">
+<button onclick="document.getElementById('popup').style.display='none'" style="position:absolute; top:10px; left:10px; background:#eee; border:none; border-radius:50%; width:28px; height:28px; font-size:16px; cursor:pointer;">×</button>
+<h3 style="text-align:center; margin-bottom:15px; color:#333;">تفاصيل الحجز</h3>
+<label for="type">نوع الحجز:</label>
+<select id="type" style="width:100%; padding:10px; margin:5px 0 10px; border:1px solid #ccc; border-radius:8px;">
+<option value="available">متاح</option>
+<option value="booked">محجوز</option>
+<option value="deposit">عربون</option>
+</select>
+<label for="stay">الإقامة:</label>
+<select id="stay" style="width:100%; padding:10px; margin:5px 0 10px; border:1px solid #ccc; border-radius:8px;">
+<option value="">نوع الإقامة</option>
+<option value="مبيت">مبيت</option>
+<option value="بدون مبيت">بدون مبيت</option>
+</select>
+<label for="amount">المبلغ:</label>
+<input id="amount" placeholder="مبلغ الحجز" style="box-sizing: border-box; width: 100%; padding:10px; margin:5px 0 10px; border:1px solid #ccc; border-radius:8px;" type="number"/>
+<label for="note">ملاحظات:</label>
+<textarea id="note" placeholder="ملاحظات" style="box-sizing: border-box; width: 100%; padding:10px; margin:5px 0 15px; border:1px solid #ccc; border-radius:8px; resize: vertical;"></textarea>
+<button onclick="saveBooking()" style="width:100%; background-color:#024488; color:white; padding:10px; border:none; border-radius:8px; font-size:16px; cursor:pointer;">حفظ</button>
+</div>
+<div class="controls" style="margin-top: 20px;">
+<button onclick="openExpenses()" style="background:#2196F3;">💸 المصروفات</button>
+<button onclick="openReports()" style="background:#9C27B0;">📊 التقارير</button>
+</div>
+<div class="popup" id="expensesPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:16px; box-shadow:0 0 10px rgba(0,0,0,0.2); width:92%; max-width:360px; z-index:9999; font-family: 'Cairo', sans-serif;">
+<button onclick="document.getElementById('expensesPopup').style.display='none'" style="position:absolute; top:10px; left:10px; background:#eee; border:none; border-radius:50%; width:28px; height:28px; font-size:16px; cursor:pointer;">×</button>
+<h3 style="text-align:center;">تسجيل مصروف</h3>
+<label for="expenseType">نوع المصروف:</label>
+<select id="expenseType" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ccc; border-radius:8px;">
+<option value="كهرباء">كهرباء</option>
+<option value="ماء">ماء</option>
+<option value="رواتب">رواتب</option>
+<option value="تنظيف">تنظيف</option>
+<option value="انترنت">انترنت</option>
+<option value="صيانة">صيانة</option>
+<option value="أخرى">أخرى</option>
+</select>
+<label for="expenseAmount">المبلغ:</label>
+<input id="expenseAmount" placeholder="أدخل المبلغ" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px;" type="number"/>
+<button onclick="saveExpense()" style="width:48%; background:#024488; color:white; padding:10px; border:none; border-radius:8px; font-size:14px; cursor:pointer;">حفظ</button>
+<button onclick="deleteExpense()" style="width:48%; background:#024488; color:white; padding:10px; border:none; border-radius:8px; font-size:14px; cursor:pointer; float:left;">حذف</button>
+<div id="expenseList" style="margin-top:20px;"></div>
+</div>
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAs1Qz1_8Bge6LvIZ61CsjQV4P8RSa8t4A",
+      authDomain: "santorini-chalet.firebaseapp.com",
+      projectId: "santorini-chalet",
+      storageBucket: "santorini-chalet.appspot.com",
+      messagingSenderId: "280049242908",
+      appId: "1:280049242908:web:2e6e7d9d88506c764760d9",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let currentDate = new Date();
+    let selectedDate = "";
+
+    function renderCalendar() {
+      const calendar = document.getElementById("calendar");
+      calendar.innerHTML = "";
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+      document.getElementById("monthYear").textContent = `${arabicMonths[month]} ${year}`;
+
+      const startDay = firstDay;
+      for (let i = 0; i < startDay; i++) {
+        calendar.appendChild(document.createElement("div"));
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const cell = document.createElement("div");
+        cell.className = "day";
+        cell.textContent = d;
+        const today = new Date();
+        if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
+          cell.classList.add('today');
+        }
+        const docId = `${year}-${month + 1}-${d}`;
+        db.collection("bookings").doc(docId).get().then(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            cell.classList.add(data.type);
+            if (data.amount !== undefined && data.amount !== null && data.amount !== "") {
+              const amountDiv = document.createElement("div");
+              amountDiv.className = 'price-label';
+              amountDiv.textContent = `${data.amount} ﷼`;
+              cell.appendChild(amountDiv);
+            }
+            if (data.stay === 'مبيت') {
+              const moon = document.createElement("div");
+              moon.className = 'moon';
+              moon.textContent = '🌙';
+              cell.appendChild(moon);
+            }
+          }
+        });
+        cell.onclick = () => openPopup(docId);
+        calendar.appendChild(cell);
+      }
+    }
+
+    function changeMonth(offset) {
+      currentDate.setMonth(currentDate.getMonth() + offset);
+      renderCalendar();
+    }
+
+    function openPopup(dateId) {
+      selectedDate = dateId;
+      db.collection("bookings").doc(dateId).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("type").value = data.type || 'available';
+          document.getElementById("stay").value = data.stay || '';
+          document.getElementById("amount").value = data.amount || '';
+          document.getElementById("note").value = data.note || '';
+        } else {
+          document.getElementById("type").value = 'available';
+          document.getElementById("stay").value = '';
+          document.getElementById("amount").value = '';
+          document.getElementById("note").value = '';
+        }
+        document.getElementById("popup").style.display = "block";
+      });
+    }
+
+    function saveBooking() {
+      const type = document.getElementById("type").value;
+      const stay = document.getElementById("stay").value;
+      const amount = document.getElementById("amount").value;
+      const note = document.getElementById("note").value;
+
+      if (type === 'available') {
+        db.collection("bookings").doc(selectedDate).delete().then(() => {
+          document.getElementById("popup").style.display = 'none';
+          renderCalendar();
+        });
+      } else {
+        db.collection("bookings").doc(selectedDate).set({ type, stay, amount, note }).then(() => {
+          document.getElementById("popup").style.display = 'none';
+          renderCalendar();
+        });
+      }
+    }
+
+    function openExpenses() {
+      document.getElementById("expensesPopup").style.display = 'block';
+      renderExpenseList();
+    }
+
+    function saveExpense() {
+      const type = document.getElementById("expenseType").value;
+      const amount = parseFloat(document.getElementById("expenseAmount").value);
+      if (!amount) return;
+      const ref = db.collection("expenses").doc(type);
+      ref.get().then(doc => {
+        const current = doc.exists ? doc.data().amount : 0;
+        ref.set({ amount: current + amount });
+        renderExpenseList();
+      });
+    }
+
+    function deleteExpense() {
+      const type = document.getElementById("expenseType").value;
+      const amount = parseFloat(document.getElementById("expenseAmount").value);
+      if (!amount) return;
+      const ref = db.collection("expenses").doc(type);
+      ref.get().then(doc => {
+        if (doc.exists) {
+          const current = doc.data().amount;
+          const updated = Math.max(0, current - amount);
+          if (updated === 0) {
+            ref.delete();
+          } else {
+            ref.set({ amount: updated });
+          }
+          renderExpenseList();
+        }
+      });
+    }
+
+    function renderExpenseList() {
+      const container = document.getElementById("expenseList");
+      container.innerHTML = "";
+      let total = 0;
+      db.collection("expenses").get().then(snapshot => {
+        snapshot.forEach(doc => {
+          const { amount } = doc.data();
+          if (amount > 0) {
+            total += amount;
+            const item = document.createElement("div");
+            item.textContent = `${doc.id}: ${amount.toFixed(2)} ﷼`;
+            container.appendChild(item);
+          }
+        });
+        const totalDiv = document.createElement("div");
+        totalDiv.style.marginTop = '10px';
+        totalDiv.style.fontWeight = 'bold';
+        totalDiv.textContent = `المجموع: ${total.toFixed(2)} ﷼`;
+        container.appendChild(totalDiv);
+      });
+    }
+
+    renderCalendar();
+function openReports() {
+  document.getElementById("reportsPopup").style.display = 'block';
+  document.getElementById("reportContent").innerHTML = "<p style='text-align:center;'>اختر الفترة واضغط تحديث</p>";
+}
+
+function generateReport() {
+  const start = new Date(document.getElementById("reportStart").value);
+  const end = new Date(document.getElementById("reportEnd").value);
+  if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) return;
+
+  let bookedDays = 0;
+  let totalIncome = 0;
+  let totalExpenses = 0;
+
+  db.collection("bookings").get().then(snapshot => {
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const docDate = new Date(doc.id);
+      if (docDate >= start && docDate <= end) {
+        if (data.type === 'booked' || data.type === 'deposit') {
+          bookedDays++;
+          if (data.amount) totalIncome += parseFloat(data.amount);
+        }
+      }
+    });
+
+    db.collection("expenses").get().then(expSnapshot => {
+      expSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.amount) totalExpenses += parseFloat(data.amount);
+      });
+
+      const netProfit = totalIncome - totalExpenses;
+
+      document.getElementById("reportContent").innerHTML = `
+        <p><strong>عدد الأيام المحجوزة:</strong> ${bookedDays} يوم</p>
+        <p><strong>إجمالي الدخل:</strong> ${totalIncome.toFixed(2)} ﷼</p>
+        <p><strong>إجمالي المصروفات:</strong> ${totalExpenses.toFixed(2)} ﷼</p>
+        <p><strong>صافي الربح:</strong> ${netProfit.toFixed(2)} ﷼</p>
+      `;
+    });
+  });
+}
+
+</script>
+<div class="popup" id="reportsPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:16px; box-shadow:0 0 10px rgba(0,0,0,0.2); width:92%; max-width:360px; z-index:9999; font-family: 'Cairo', sans-serif;">
+<button onclick="document.getElementById('reportsPopup').style.display='none'" style="position:absolute; top:10px; left:10px; background:#eee; border:none; border-radius:50%; width:28px; height:28px; font-size:16px; cursor:pointer;">×</button>
+<h3 style="text-align:center;">التقارير</h3>
+<label>من تاريخ:</label>
+<input id="reportStart" style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px;" type="date"/>
+<label>إلى تاريخ:</label>
+<input id="reportEnd" style="width:100%; padding:8px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px;" type="date"/>
+<button onclick="generateReport()" style="width:100%; background-color:#024488; color:white; padding:10px; border:none; border-radius:8px; font-size:16px; cursor:pointer;">تحديث</button>
+<div id="reportContent" style="text-align:right; margin-top:20px;"></div>
+</div>
+
+<button id="installBtn" style="position: fixed; bottom: 20px; right: 20px; background-color: #024488; color: white; border: none; border-radius: 10px; padding: 10px 18px; font-size: 14px; cursor: pointer; z-index: 9999; display: none;">
+📲 تثبيت التطبيق
+</button>
+
+<script>
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'block';
+});
+
+installBtn?.addEventListener('click', () => {
+  installBtn.style.display = 'none';
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(choiceResult => {
+    if (choiceResult.outcome !== 'accepted') {
+      console.log('User dismissed the install prompt');
+    }
+    deferredPrompt = null;
+  });
+});
+</script>
+</body>
+</html>

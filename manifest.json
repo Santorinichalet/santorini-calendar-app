@@ -1,0 +1,17 @@
+{
+  "name": "تقويم شاليه سانتوريني",
+  "short_name": "سانتوريني",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#024488",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "https://i.ibb.co/1GHzZZfj/Santorini-Logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
