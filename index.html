@@ -7,6 +7,36 @@
 <title>تقويم حجز شاليه سانتوريني</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&amp;display=swap" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const typeSelect = document.getElementById("type");
+    const depositSection = document.getElementById("depositSection");
+    const depositInput = document.getElementById("deposit");
+    const remainingInput = document.getElementById("remaining");
+    const amountInput = document.getElementById("amount");
+
+    function updateRemaining() {
+      const total = parseFloat(amountInput.value) || 0;
+      const deposit = parseFloat(depositInput.value) || 0;
+      remainingInput.value = Math.max(total - deposit, 0);
+    }
+
+    window.updateRemaining = updateRemaining;
+
+    typeSelect.addEventListener("change", () => {
+      if (typeSelect.value === "deposit") {
+        depositSection.style.display = "block";
+        updateRemaining();
+      } else {
+        depositSection.style.display = "none";
+        depositInput.value = "";
+        remainingInput.value = "";
+      }
+    });
+
+    amountInput.addEventListener("input", updateRemaining);
+  });
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
     * { font-family: 'Tajawal', sans-serif !important; }
@@ -219,6 +249,14 @@ header img {
 </select>
 <label for="amount">المبلغ:</label>
 <input id="amount" placeholder="مبلغ الحجز" style="box-sizing: border-box; width: 100%; padding:10px; margin:5px 0 10px; border:1px solid #ccc; border-radius:8px;" type="number"/>
+<div id="depositSection" style="display:none;">
+<label for="deposit">قيمة العربون:</label>
+<input id="deposit" oninput="updateRemaining()" placeholder="أدخل قيمة العربون" style="box-sizing: border-box; width: 100%; padding:10px; margin:5px 0 10px;
+            border:1px solid #ccc; border-radius:8px;" type="number"/>
+<label for="remaining">المتبقي:</label>
+<input disabled="" id="remaining" style="box-sizing: border-box; width: 100%; padding:10px; margin:5px 0 15px;
+            border:1px solid #ccc; border-radius:8px; background:#eee;" type="text"/>
+</div>
 <label for="note">ملاحظات:</label>
 <textarea id="note" placeholder="ملاحظات" style="box-sizing: border-box; width: 100%; padding:10px; margin:5px 0 15px; border:1px solid #ccc; border-radius:8px; resize: vertical;"></textarea>
 <button onclick="saveBooking()" style="width:100%; background-color:#024488; color:white; padding:10px; border:none; border-radius:8px; font-size:16px; cursor:pointer;">حفظ</button>
