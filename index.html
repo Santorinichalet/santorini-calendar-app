@@ -1,21 +1,18 @@
 
-
-
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+
+<html dir="rtl" lang="ar">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>تطبيق سنتوريني شاليه</title>
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#007bff">
-
-  <style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>تطبيق سنتوريني شاليه</title>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet"/>
+<link href="manifest.json" rel="manifest"/>
+<meta content="#007bff" name="theme-color"/>
+<style>
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
     html, body {
       font-family: 'Tajawal', sans-serif;
@@ -278,105 +275,130 @@
   margin: 0 auto;
 }
 
-  </style>
+  
+.property-switch {
+  display: flex; gap: 10px; justify-content: center;
+  padding: 8px 12px; border-bottom: 1px solid #eee;
+}
+.prop-btn {
+  background: #eef4ff; color: #024488; border: 1px solid #d7e3ff;
+  padding: 8px 14px; border-radius: 20px; cursor: pointer; font-weight: 700;
+}
+.prop-btn.active { background: #024488; color: #fff; border-color: #024488; }
+</style>
 </head>
 <body>
-<div class="logo-container">
-  <img src="https://i.ibb.co/271BVWXd/Santorini-Logo.png" alt="Santorini-Logo" border="0">
+<div id="notifications" style="
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #ffeaa7;
+  color: #2d3436;
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  display: none;
+  z-index: 1000;
+"></div>
+<div class="popup" id="dashboardPopup" style="max-width:600px;">
+<button class="close-btn" onclick="closePopup('dashboardPopup')">×</button>
+<h3 style="color:#007bff;">لوحة التحكم</h3>
+<div id="dashboardContent" style="text-align:center;"></div>
 </div>
-
-
-  <div class="swiper">
-    <div class="swiper-wrapper" id="monthsContainer"></div>
+<div class="property-switch" id="propertySwitch"><button class="prop-btn active" onclick="switchProperty('chalet')">🏖 الشاليه</button><button class="prop-btn" onclick="switchProperty('apartment')">🏢 الشقة</button></div><div class="logo-container">
+<img id="mainLogo" src="https://i.ibb.co/271BVWXd/Santorini-Logo.png" alt="Santorini-Logo" border="0">
+</div>
+<div class="swiper">
+<div class="swiper-wrapper" id="monthsContainer"></div>
+</div>
+<button id="goToToday">اليوم</button>
+<!-- نافذة الحجز -->
+<div class="popup" id="bookingPopup">
+<button class="close-btn" onclick="closePopup('bookingPopup')">×</button>
+<h3>تفاصيل الحجز</h3>
+<label for="periodSelect">الفترة:</label>
+<select id="periodSelect">
+<option value="">اختر الفترة</option>
+<option value="morning">صباح</option>
+<option value="evening">مساء</option>
+<option value="fullDay">يوم كامل</option>
+<option value="overnight">مبيت</option>
+</select>
+<label for="timePeriod" id="timePeriodLabel" style="display:none;">الفترة الزمنية:</label>
+<input id="timePeriod" placeholder="مثال: 8-12 ص أو 4-8 م" style="display:none;" type="text"/>
+<label for="status">نوع الحجز:</label>
+<select id="status">
+<option value="">اختر</option>
+<option value="محجوز">محجوز</option>
+<option value="عربون">عربون</option>
+<option value="متاح">متاح</option>
+</select>
+<label for="amount">السعر:</label>
+<input id="amount" placeholder="ريال عماني" type="number"/>
+<div class="deposit-group" id="depositGroup" style="display:none;">
+<label for="deposit" style="font-weight: bold; color: #c00;">العربون:</label>
+<input id="deposit" placeholder="ريال عماني" style="width: 80px; margin-left: 6px;" type="number"/>
+<span id="remaining" style="margin-left: 10px; font-weight: bold;"></span>
+</div>
+<label for="guestCount">عدد الضيوف:</label>
+<input id="guestCount" min="1" placeholder="أدخل عدد الضيوف" type="number"/>
+<hr style="margin: 20px 0;"/>
+<label for="guestName">اسم الضيف:</label>
+<input id="guestName" placeholder="أدخل اسم الضيف" type="text"/>
+<label for="guestPhone">رقم الهاتف:</label>
+<input id="guestPhone" placeholder="أدخل رقم الهاتف" type="text"/>
+<label for="notes">ملاحظات:</label>
+<textarea id="notes" placeholder="ملاحظات إضافية" rows="2"></textarea>
+<div class="button-group">
+<button class="action" id="saveBooking">💾 حفظ</button>
+<button class="action secondary" id="showBookingCard">🃏 عرض بطاقة الحجز</button>
+<div id="copyReservationLink" style="display:none; margin-top:10px; cursor:pointer; color:#007bff;">
+📋 نسخ رابط الحجز
   </div>
-
-  <button id="goToToday">اليوم</button>
-
-  <!-- نافذة الحجز -->
-  <div class="popup" id="bookingPopup">
-    <button class="close-btn" onclick="closePopup('bookingPopup')">×</button>
-    <h3>تفاصيل الحجز</h3>
-    <label for="periodSelect">الفترة:</label>
-    <select id="periodSelect">
-      <option value="">اختر الفترة</option>
-      <option value="morning">صباح</option>
-      <option value="evening">مساء</option>
-      <option value="fullDay">يوم كامل</option>
-      <option value="overnight">مبيت</option>
-    </select>
-    <label for="timePeriod" id="timePeriodLabel" style="display:none;">الفترة الزمنية:</label>
-    <input type="text" id="timePeriod" placeholder="مثال: 8-12 ص أو 4-8 م" style="display:none;" />
-    <label for="status">نوع الحجز:</label>
-    <select id="status">
-      <option value="">اختر</option>
-      <option value="محجوز">محجوز</option>
-      <option value="عربون">عربون</option>
-      <option value="متاح">متاح</option>
-    </select>
-    <label for="amount">السعر:</label>
-    <input id="amount" type="number" placeholder="ريال عماني" />
-    <div class="deposit-group" id="depositGroup" style="display:none;">
-      <label for="deposit" style="font-weight: bold; color: #c00;">العربون:</label>
-      <input type="number" id="deposit" placeholder="ريال عماني" style="width: 80px; margin-left: 6px;" />
-      <span id="remaining" style="margin-left: 10px; font-weight: bold;"></span>
-    </div>
-    <hr style="margin: 20px 0;" />
-    <label for="guestName">اسم الضيف:</label>
-    <input type="text" id="guestName" placeholder="أدخل اسم الضيف" />
-    <label for="guestPhone">رقم الهاتف:</label>
-    <input type="text" id="guestPhone" placeholder="أدخل رقم الهاتف" />
-    <label for="notes">ملاحظات:</label>
-    <textarea id="notes" rows="2" placeholder="ملاحظات إضافية"></textarea>
-    <div class="button-group">
-      <button id="saveBooking" class="action">💾 حفظ</button>
-      <button id="showBookingCard" class="action secondary">🃏 عرض بطاقة الحجز</button>
-    </div>
-  </div>
-
-  <!-- بطاقة الحجز -->
-  <div class="popup" id="bookingCardPopup" style="max-width: 350px;">
-    <button class="close-btn" onclick="closePopup('bookingCardPopup')">×</button>
-    <img src="https://i.ibb.co/271BVWXd/Santorini-Logo.png" alt="Santorini-Logo" border="0">
-    <h3 style="text-align:center;">بطاقة الحجز</h3>
-    <div id="bookingCardContent" style="font-size: 14px; line-height: 1.4; direction: rtl;"></div>
-  </div>
-
-  <!-- نافذة المصروفات -->
-  <div class="popup" id="expensesPopup" style="max-width: 350px;">
-    <button class="close-btn" onclick="closePopup('expensesPopup')">×</button>
-    <h3>المصروفات</h3>
-    <label for="expenseTypeSelect">نوع المصروف:</label>
-    <select id="expenseTypeSelect" style="width: 100%; padding: 6px; font-size: 14px;">
-      <option value="" disabled selected>اختر نوع المصروف</option>
-      <option value="كهرباء">كهرباء</option>
-      <option value="ماء">ماء</option>
-      <option value="رواتب">رواتب</option>
-      <option value="تنظيف">تنظيف</option>
-      <option value="انترنت">انترنت</option>
-      <option value="صيانة">صيانة</option>
-      <option value="أخرى">أخرى</option>
-    </select>
-    <input type="text" id="expenseTypeInput" placeholder="أدخل نوع مصروف جديد" style="margin-top: 10px; display:none; width: 100%; padding: 6px; font-size: 14px;" />
-    <label for="expenseAmount">المبلغ:</label>
-    <input type="number" id="expenseAmount" placeholder="ريال عماني" />
-    <div style="display: flex; justify-content: space-between; gap: 10px;">
-      <button id="saveExpense" class="action" style="width: 48%;">حفظ</button>
-      <button id="deleteExpense" class="action" style="width: 48%; background: #dc3545;">حذف</button>
-    </div>
-    <div id="expenseList"></div>
-  </div>
-
-  <!-- نافذة التقرير -->
-  <div class="popup" id="reportPopup" style="max-width: 400px;">
-    <button class="close-btn" onclick="closePopup('reportPopup')">×</button>
-    <h3>التقرير حسب النطاق</h3>
-    <label for="reportFromDate">من:</label>
-    <input type="date" id="reportFromDate" value="2025-01-01" max="2025-12-31" />
-    <label for="reportToDate" style="margin-top: 12px;">إلى:</label>
-    <input type="date" id="reportToDate" value="2025-01-31" max="2025-12-31" />
-    <button id="generateReportBtn" class="action" style="width: 100%; margin-top: 15px;">عرض التقرير</button>
-    <div id="reportContent" style="font-size: 14px; line-height: 1.5; min-height: 120px; margin-top: 12px;"></div>
-  </div>
+</div>
+</div>
+<!-- بطاقة الحجز -->
+<div class="popup" id="bookingCardPopup" style="max-width: 350px;">
+<button class="close-btn" onclick="closePopup('bookingCardPopup')">×</button>
+<img id="cardLogo" src="https://i.ibb.co/271BVWXd/Santorini-Logo.png" alt="Santorini-Logo" border="0">
+<h3 style="text-align:center;">بطاقة الحجز</h3>
+<div id="bookingCardContent" style="font-size: 14px; line-height: 1.4; direction: rtl;"></div>
+</div>
+<!-- نافذة المصروفات -->
+<div class="popup" id="expensesPopup" style="max-width: 350px;">
+<button class="close-btn" onclick="closePopup('expensesPopup')">×</button>
+<h3>المصروفات</h3>
+<label for="expenseTypeSelect">نوع المصروف:</label>
+<select id="expenseTypeSelect" style="width: 100%; padding: 6px; font-size: 14px;">
+<option disabled="" selected="" value="">اختر نوع المصروف</option>
+<option value="كهرباء">كهرباء</option>
+<option value="ماء">ماء</option>
+<option value="رواتب">رواتب</option>
+<option value="تنظيف">تنظيف</option>
+<option value="انترنت">انترنت</option>
+<option value="صيانة">صيانة</option>
+<option value="أخرى">أخرى</option>
+</select>
+<input id="expenseTypeInput" placeholder="أدخل نوع مصروف جديد" style="margin-top: 10px; display:none; width: 100%; padding: 6px; font-size: 14px;" type="text"/>
+<label for="expenseAmount">المبلغ:</label>
+<input id="expenseAmount" placeholder="ريال عماني" type="number"/>
+<div style="display: flex; justify-content: space-between; gap: 10px;">
+<button class="action" id="saveExpense" style="width: 48%;">حفظ</button>
+<button class="action" id="deleteExpense" style="width: 48%; background: #dc3545;">حذف</button>
+</div>
+<div id="expenseList"></div>
+</div>
+<!-- نافذة التقرير -->
+<div class="popup" id="reportPopup" style="max-width: 400px;">
+<button class="close-btn" onclick="closePopup('reportPopup')">×</button>
+<h3>التقرير حسب النطاق</h3>
+<label for="reportFromDate">من:</label>
+<input id="reportFromDate" max="2025-12-31" type="date" value="2025-01-01"/>
+<label for="reportToDate" style="margin-top: 12px;">إلى:</label>
+<input id="reportToDate" max="2025-12-31" type="date" value="2025-01-31"/>
+<button class="action" id="generateReportBtn" style="width: 100%; margin-top: 15px;">عرض التقرير</button>
+<div id="reportContent" style="font-size: 14px; line-height: 1.5; min-height: 120px; margin-top: 12px;"></div>
+</div>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(() => {
@@ -384,8 +406,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-
-  <script>
+<script>
     // إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAs1Qz1_8Bge6LvIZ61CsjQV4P8RSa8t4A",
@@ -398,6 +419,29 @@ const firebaseConfig = {
 };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+// ===== تبديل شعار العقار =====
+const CHALET_LOGO = "https://i.ibb.co/271BVWXd/Santorini-Logo.png"; // شعار الشاليه (سنتوريني)
+const APARTMENT_LOGO = "https://i.ibb.co/XxYxYMpC/Beige-and-Brown-Modern-Illustrative-Hotel-Resort-Logo.png"; // شعار الشقة
+
+// تُعيد رابط الشعار حسب العقار الحالي
+function getLogoUrl() {
+  return (currentProperty === 'chalet') ? CHALET_LOGO : APARTMENT_LOGO;
+}
+
+// تُحدِّث كل الشعارات الظاهرة
+function updateLogos() {
+  const main = document.getElementById('mainLogo');
+  if (main) main.src = getLogoUrl();
+
+  const card = document.getElementById('cardLogo');
+  if (card) card.src = getLogoUrl();
+}
+
+// تحديث أولي عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', updateLogos);
+
+
 async function loadMonthBookings(monthIndex) {
   const year = 2025;
   const monthStr = String(monthIndex + 1).padStart(2, '0');
@@ -408,7 +452,7 @@ async function loadMonthBookings(monthIndex) {
 
   const bookings = {};
 
-  const snapshot = await db.collection("calendar2025")
+  const snapshot = await db.collection(calendarCol())
     .where(firebase.firestore.FieldPath.documentId(), ">=", startKey)
     .where(firebase.firestore.FieldPath.documentId(), "<=", endKey)
     .get();
@@ -500,42 +544,40 @@ case 'evening': text = data[period].timePeriod ? `${data[period].timePeriod}` : 
     }
 
     // تحميل بيانات المصروفات ونوعياتها
-    async function loadExpenses(month) {
-      currentExpenseDocId = `expenses-2025-${month}`;
-      expensesList = [];
-      document.getElementById('expenseList').innerHTML = '';
-      document.getElementById('expenseTypeInput').style.display = 'none';
-      document.getElementById('expenseTypeSelect').style.display = 'block';
+async function loadExpenses(month) {
+  currentExpenseDocId = expensesDocId(month);
+  expensesList = [];
+  document.getElementById('expenseList').innerHTML = '';
+  document.getElementById('expenseTypeInput').style.display = 'none';
+  document.getElementById('expenseTypeSelect').style.display = 'block';
 
-      // تحميل أنواع المصروفات في القائمة المنسدلة (دمج أنواع ثابتة مع التي في المصروفات)
-      const allTypes = [...new Set([...expenseTypes])];
+  showPopup('expensesPopup'); // 👈 أضف هذه هنا
+  const allTypes = [...new Set([...expenseTypes])];
 
-      // تحميل بيانات المصروفات من فايرستور
-      try {
-        const doc = await db.collection("expenses").doc(currentExpenseDocId).get();
-        if (doc.exists) {
-          expensesList = doc.data().items || [];
-          expensesList.forEach(exp => {
-            if (!allTypes.includes(exp.type)) allTypes.push(exp.type);
-          });
-        }
-      } catch(e) {
-        alert('خطأ في تحميل المصروفات: ' + e.message);
-      }
-
-      // ملء القائمة المنسدلة بأنواع المصروفات
-      const select = document.getElementById('expenseTypeSelect');
-      select.innerHTML = '<option value="" disabled selected>اختر نوع المصروف</option>';
-      allTypes.forEach(type => {
-        const opt = document.createElement('option');
-        opt.value = type;
-        opt.textContent = type;
-        select.appendChild(opt);
+  try {
+    const doc = await db.collection("expenses").doc(currentExpenseDocId).get();
+    if (doc.exists) {
+      expensesList = doc.data().items || [];
+      expensesList.forEach(exp => {
+        if (!allTypes.includes(exp.type)) allTypes.push(exp.type);
       });
-
-      renderExpenses();
-      showPopup('expensesPopup');
     }
+  } catch(e) {
+    alert('خطأ في تحميل المصروفات: ' + e.message);
+  }
+
+  const select = document.getElementById('expenseTypeSelect');
+  select.innerHTML = '<option value="" disabled selected>اختر نوع المصروف</option>';
+  allTypes.forEach(type => {
+    const opt = document.createElement('option');
+    opt.value = type;
+    opt.textContent = type;
+    select.appendChild(opt);
+  });
+
+  renderExpenses();
+}
+
 
     // حدث تغيير اختيار نوع المصروف (إظهار حقل إدخال جديد إذا اخترت "أخرى")
     document.getElementById('expenseTypeSelect').addEventListener('change', (e) => {
@@ -629,16 +671,6 @@ document.getElementById('deleteExpense').addEventListener('click', () => {
   document.getElementById('expenseTypeSelect').value = '';
 });
 
-
-    // فتح نافذة المصروفات من زر الشهر
-    function openExpenses(month) {
-      loadExpenses(month);
-    }
-
-    // إظهار وإخفاء النافذة
-    function showPopup(id) {
-      document.getElementById(id).style.display = 'block';
-    }
     function closePopup(id) {
       document.getElementById(id).style.display = 'none';
     }
@@ -666,6 +698,7 @@ document.getElementById('deleteExpense').addEventListener('click', () => {
     const timePeriodLabel = document.getElementById('timePeriodLabel');
 
     periodSelect.addEventListener('change', (e) => {
+  if (typeof currentProperty !== 'undefined' && currentProperty === 'apartment') { e.target.value = 'fullDay'; currentPeriod = 'fullDay'; }
       currentPeriod = e.target.value;
 
       if (!currentPeriod) {
@@ -682,6 +715,7 @@ document.getElementById('deleteExpense').addEventListener('click', () => {
         document.getElementById('amount').value = periodData.amount || '';
         document.getElementById('deposit').value = periodData.deposit || '';
         updateRemaining();
+        document.getElementById('guestCount').value = periodData.guestCount || '';
         document.getElementById('guestName').value = periodData.guestName || '';
         document.getElementById('guestPhone').value = periodData.guestPhone || '';
         document.getElementById('notes').value = periodData.notes || '';
@@ -712,6 +746,7 @@ document.getElementById('deleteExpense').addEventListener('click', () => {
         document.getElementById('amount').value = '';
         document.getElementById('deposit').value = '';
         document.getElementById('remaining').textContent = '';
+        document.getElementById('guestCount').value = '';
         document.getElementById('guestName').value = '';
         document.getElementById('guestPhone').value = '';
         document.getElementById('notes').value = '';
@@ -738,8 +773,31 @@ document.getElementById('deleteExpense').addEventListener('click', () => {
       periodSelect.value = '';
       clearBookingFields();
 
-      // تحميل بيانات الحجز لليوم من Firebase
-      db.collection("calendar2025").doc(currentDateKey).get().then(doc => {
+      
+  // ضمان يوم كامل للشقة وإخفاء عناصر الفترة
+  try {
+    if (typeof currentProperty !== 'undefined' && currentProperty === 'apartment') {
+      const periodSelect = document.getElementById('periodSelect');
+      const periodLabel = document.querySelector('label[for="periodSelect"]');
+      const timePeriodInput = document.getElementById('timePeriod');
+      const timePeriodLabel = document.getElementById('timePeriodLabel');
+      if (periodSelect) {
+        periodSelect.value = 'fullDay';
+        periodSelect.disabled = true;
+        currentPeriod = 'fullDay';
+      }
+      if (periodLabel) periodLabel.style.display = 'none';
+      if (timePeriodInput) timePeriodInput.style.display = 'none';
+      if (timePeriodLabel) timePeriodLabel.style.display = 'none';
+    } else {
+      const periodSelect = document.getElementById('periodSelect');
+      const periodLabel = document.querySelector('label[for="periodSelect"]');
+      if (periodSelect) periodSelect.disabled = false;
+      if (periodLabel) periodLabel.style.display = '';
+    }
+  } catch(e) {}
+// تحميل بيانات الحجز لليوم من Firebase
+     db.collection(calendarCol()).doc(currentDateKey).get().then(doc => {
         if (doc.exists) {
           currentBookingData = doc.data();
         } else {
@@ -750,6 +808,7 @@ document.getElementById('deleteExpense').addEventListener('click', () => {
 
     // حفظ بيانات الحجز في Firestore
 document.getElementById('saveBooking').addEventListener('click', async () => {
+  if (typeof currentProperty !== 'undefined' && currentProperty === 'apartment') { currentPeriod = 'fullDay'; const ps=document.getElementById('periodSelect'); if (ps) ps.value='fullDay'; }
   if (!currentDateKey) {
     alert('يرجى اختيار اليوم!');
     return;
@@ -770,7 +829,7 @@ document.getElementById('saveBooking').addEventListener('click', async () => {
     if (!confirmDelete) return;
 
     try {
-      const docRef = db.collection("calendar2025").doc(currentDateKey);
+      const docRef = db.collection(calendarCol()).doc(currentDateKey);
       // احذف الفترة المحددة
       await docRef.update({ [currentPeriod]: firebase.firestore.FieldValue.delete() });
       toast('تم حذف الحجز بنجاح', 'success');
@@ -790,7 +849,7 @@ document.getElementById('saveBooking').addEventListener('click', async () => {
     return;
 
     try {
-      const docRef = db.collection("calendar2025").doc(currentDateKey);
+      const docRef = db.collection(calendarCol()).doc(currentDateKey);
 
       await docRef.update({
         [currentPeriod]: firebase.firestore.FieldValue.delete()
@@ -819,23 +878,39 @@ document.getElementById('saveBooking').addEventListener('click', async () => {
   }
 
   const periodData = {
-    status,
-    amount,
-    deposit: status === 'عربون' ? (parseFloat(document.getElementById('deposit').value) || 0) : 0,
-    guestName: document.getElementById('guestName').value.trim(),
-    guestPhone: document.getElementById('guestPhone').value.trim(),
-    notes: document.getElementById('notes').value.trim(),
-    timePeriod: (currentPeriod === 'morning' || currentPeriod === 'evening') ? timePeriodInput.value.trim() : ''
-  };
+  status,
+  amount,
+  deposit: status === 'عربون' ? (parseFloat(document.getElementById('deposit').value) || 0) : 0,
+  guestName: document.getElementById('guestName').value.trim(),
+  guestPhone: document.getElementById('guestPhone').value.trim(),
+  guestCount: parseInt(document.getElementById('guestCount').value) || 0,
+  notes: document.getElementById('notes').value.trim(),
+  timePeriod: (currentPeriod === 'morning' || currentPeriod === 'evening') ? timePeriodInput.value.trim() : ''
+};
+
 
   const updatedData = {...(currentBookingData || {})};
   updatedData[currentPeriod] = periodData;
 
   try {
-    await db.collection("calendar2025").doc(currentDateKey).set(updatedData);
+    await db.collection(calendarCol()).doc(currentDateKey).set(updatedData);
+const reservationLink = `https://santorinichalet.github.io/santorini-calendar/reservation.html?id=${currentDateKey}`;
+
+const copyBtn = document.getElementById('copyReservationLink');
+copyBtn.style.display = 'block';
+
+copyBtn.onclick = () => {
+  navigator.clipboard.writeText(reservationLink).then(() => {
+    copyBtn.textContent = '✅ تم نسخ رابط الحجز بنجاح';
+    setTimeout(() => {
+      copyBtn.innerHTML = '📋 نسخ رابط الحجز';
+    }, 3000);
+  });
+};
+
     alert('تم حفظ البيانات بنجاح');
     currentBookingData = updatedData;
-
+    scheduleThankYou(updatedData);
     const dayEl = document.querySelector(`.day[data-date='${currentDateKey}']`);
     if (dayEl) renderBookings(dayEl, currentBookingData);
 
@@ -861,6 +936,7 @@ document.getElementById('saveBooking').addEventListener('click', async () => {
         <p><strong>الفترة الزمنية:</strong> ${data.timePeriod || 'لا توجد'}</p>
         <p><strong>السعر:</strong> ${data.amount} ريال عماني</p>
         ${data.status === 'عربون' ? `<p><strong>العربون:</strong> ${data.deposit} ريال عماني</p>` : ''}
+        <p><strong>عدد الضيوف:</strong> ${data.guestCount || 'غير محدد'}</p>
         <p><strong>اسم الضيف:</strong> ${data.guestName}</p>
         <p><strong>رقم الهاتف:</strong> ${data.guestPhone}</p>
         <p><strong>ملاحظات:</strong> ${data.notes || 'لا توجد'}</p>
@@ -873,75 +949,88 @@ document.getElementById('saveBooking').addEventListener('click', async () => {
     document.getElementById('showBookingCard').addEventListener('click', showBookingCard);
 
     // تهيئة swiper للأشهر
-    let swiper = null;
-    document.addEventListener('DOMContentLoaded', () => {
-      const monthsList = ['يناير 2025','فبراير 2025','مارس 2025','أبريل 2025','مايو 2025','يونيو 2025','يوليو 2025','أغسطس 2025','سبتمبر 2025','أكتوبر 2025','نوفمبر 2025','ديسمبر 2025'];
-      const weekdays = ['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
-      const today = new Date();
-      const currentDay = today.getDate();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      const initialMonthIndex = currentYear === 2025 ? currentMonth : 0;
-      const monthsContainer = document.getElementById('monthsContainer');
+// تهيئة التقويم في كل مرة (حسب العقار المختار)
+let swiper = null;
 
-      monthsList.forEach((month, index) => {
-        const slide = document.createElement('div');
-        slide.className = 'swiper-slide';
+function buildCalendar() {
+  const monthsList = [
+    'يناير 2025','فبراير 2025','مارس 2025','أبريل 2025','مايو 2025','يونيو 2025',
+    'يوليو 2025','أغسطس 2025','سبتمبر 2025','أكتوبر 2025','نوفمبر 2025','ديسمبر 2025'
+  ];
+  const weekdays = ['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
 
-        const daysInMonth = new Date(2025, index + 1, 0).getDate();
-const firstDay = new Date(2025, index, 1).getDay(); // 0 = الأحد, 1 = الاثنين…
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const initialMonthIndex = currentYear === 2025 ? currentMonth : 0;
 
-let calendarGrid = '';
+  const monthsContainer = document.getElementById('monthsContainer');
+  // نظّف الشرائح
+  monthsContainer.innerHTML = '';
 
-// أضف الأيام الفارغة قبل بداية الشهر
-for (let i = 0; i < firstDay; i++) {
-  calendarGrid += `<div class='day empty'></div>`;
-}
+  // أنشئ الشرائح من جديد
+  monthsList.forEach((month, index) => {
+    const slide = document.createElement('div');
+    slide.className = 'swiper-slide';
 
-// أضف الأيام الفعلية
-for (let i = 1; i <= daysInMonth; i++) {
-  const isToday = (index === currentMonth && currentYear === 2025 && i === currentDay);
-  const dateKey = `2025-${String(index + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-  calendarGrid += `
-    <div class='day${isToday ? " today" : ""}' data-date='${dateKey}'>
-      <div class="day-number">${i}</div>
-    </div>
-  `;
-}
+    const daysInMonth = new Date(2025, index + 1, 0).getDate();
+    const firstDay = new Date(2025, index, 1).getDay(); // 0=الأحد
 
+    let calendarGrid = '';
+    // فراغات قبل بداية الشهر
+    for (let i = 0; i < firstDay; i++) {
+      calendarGrid += `<div class="day empty"></div>`;
+    }
+    // الأيام
+    for (let i = 1; i <= daysInMonth; i++) {
+      const isToday = (index === currentMonth && currentYear === 2025 && i === currentDay);
+      const dateKey = `2025-${String(index + 1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+      calendarGrid += `
+        <div class="day${isToday ? ' today' : ''}" data-date="${dateKey}">
+          <div class="day-number">${i}</div>
+        </div>
+      `;
+    }
 
-        slide.innerHTML = `
-          <div class="month-title">${month}</div>
-          <div class="weekday-row">${weekdays.map(w => `<div>${w}</div>`).join('')}</div>
-          <div class="calendar-grid">${calendarGrid}</div>
-          <div class="month-buttons">
-            <button onclick="openExpenses('${String(index+1).padStart(2,'0')}')">💰 المصروفات</button>
-            <button onclick="showPopup('reportPopup')">📊 التقرير</button>
-          </div>`;
+    slide.innerHTML = `
+      <div class="month-title">${month}</div>
+      <div class="weekday-row">${weekdays.map(w => `<div>${w}</div>`).join('')}</div>
+      <div class="calendar-grid">${calendarGrid}</div>
+      <div class="month-buttons">
+        <button onclick="openDashboard()">📊 لوحة التحكم</button>
+        <button onclick="openExpenses('${String(index+1).padStart(2,'0')}')">💰 المصروفات</button>
+        <button onclick="generateReport()">📊 التقرير</button>
+      </div>
+    `;
+    monthsContainer.appendChild(slide);
 
-        monthsContainer.appendChild(slide);
-
-        // تحميل بيانات الحجوزات للأيام من فايرستور
-        for (let i = 1; i <= daysInMonth; i++) {
-          const dateKey = `2025-${String(index + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-          db.collection("calendar2025").doc(dateKey).get().then(doc => {
-            if (doc.exists) {
-              const dayEl = slide.querySelector(`.day[data-date='${dateKey}']`);
-              if (dayEl) renderBookings(dayEl, doc.data());
-            }
-          });
+    // تحميل حجوزات هذا الشهر من المجموعة الصحيحة حسب العقار
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dateKey = `2025-${String(index + 1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+      db.collection(calendarCol()).doc(dateKey).get().then(doc => {
+        if (doc.exists) {
+          const dayEl = slide.querySelector(`.day[data-date='${dateKey}']`);
+          if (dayEl) renderBookings(dayEl, doc.data());
         }
       });
+    }
+  });
 
-      swiper = new Swiper('.swiper', {
-        slidesPerView: 'auto',
-        centeredSlides: true,
-        spaceBetween: 0,
-        loop: true,
-        effect: 'slide',
-      });
-      swiper.slideToLoop(initialMonthIndex, 0);
-    });
+  // أعد تهيئة السوايبر
+  if (swiper && swiper.destroy) {
+    swiper.destroy(true, true);
+  }
+  swiper = new Swiper('.swiper', {
+    slidesPerView: 'auto',
+    centeredSlides: true,
+    spaceBetween: 0,
+    loop: true,
+    effect: 'slide',
+  });
+  swiper.slideToLoop(initialMonthIndex, 0);
+}
+
 
     // زر "اليوم"
     document.getElementById('goToToday').addEventListener('click', () => {
@@ -987,7 +1076,8 @@ for (let i = 1; i <= daysInMonth; i++) {
           const day = String(date.getDate()).padStart(2, '0');
           const dayKey = `${year}-${month}-${day}`;
 
-          const doc = await db.collection("calendar2025").doc(dayKey).get();
+          const doc = await db.collection(calendarCol()).doc(dayKey).get();
+
           if (doc.exists) {
             const data = doc.data();
             ['morning', 'evening', 'fullDay', 'overnight'].forEach(period => {
@@ -1019,8 +1109,8 @@ for (let i = 1; i <= daysInMonth; i++) {
 
         let totalExpenses = 0;
         for (const month of monthsInRange) {
-          const expensesDocId = `expenses-2025-${month}`;
-          const expensesDoc = await db.collection("expenses").doc(expensesDocId).get();
+          const expId = expensesDocId(month);
+          const expensesDoc = await db.collection("expenses").doc(expId).get();
           if (expensesDoc.exists) {
             const items = expensesDoc.data().items || [];
             totalExpenses += items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
@@ -1066,7 +1156,7 @@ function toast(message, type = 'info') {
   const d = String(today.getDate()).padStart(2, '0');
   const dateKey = `${y}-${m}-${d}`;
 
-  const doc = await db.collection('calendar2025').doc(dateKey).get();
+  const doc = await db.collection(calendarCol()).doc(dateKey).get();
 
   if (doc.exists) {
     const data = doc.data();
@@ -1087,15 +1177,323 @@ function toast(message, type = 'info') {
       if (Notification.permission === 'granted') {
         new Notification('📅 لديك حجز اليوم!', {
           body: `تاريخ: ${dateKey}`,
-          icon: 'https://i.ibb.co/271BVWXd/Santorini-Logo.png'
+           icon: getLogoUrl()
         });
       }
     }
   }
 })();
 
+function scheduleThankYou(booking) {
+  const now = new Date();
+  const bookingDate = new Date(currentDateKey);
+  let exitDate = new Date(bookingDate);
 
-  </script>
+  const period = currentPeriod;
+  if (!period || !booking[period]) return;
+
+  if (period === 'morning' || period === 'evening') {
+    const timeRange = booking[period].timePeriod || '08:00-14:00';
+    const endTime = timeRange.split('-')[1].trim();
+    const [endHour, endMinute] = endTime.split(':');
+    exitDate.setHours(+endHour, +endMinute, 0, 0);
+  } else if (period === 'fullDay') {
+    exitDate.setHours(22, 0, 0, 0); // 10 مساء
+  } else if (period === 'overnight') {
+    exitDate.setDate(exitDate.getDate() + 1);
+    exitDate.setHours(9, 0, 0, 0); // اليوم التالي 9 صباح
+  }
+
+  const msUntilExit = exitDate - now;
+
+  if (msUntilExit <= 0) {
+    showThankYou(booking[period].guestName);
+  } else {
+    setTimeout(() => {
+      showThankYou(booking[period].guestName);
+    }, msUntilExit);
+  }
+}
+
+function showThankYou(guestName) {
+  const modal = document.createElement('div');
+  modal.style.position = 'fixed';
+  modal.style.top = '0';
+  modal.style.left = '0';
+  modal.style.width = '100%';
+  modal.style.height = '100%';
+  modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+  modal.style.display = 'flex';
+  modal.style.justifyContent = 'center';
+  modal.style.alignItems = 'center';
+  modal.style.zIndex = '10000';
+
+  modal.innerHTML = `
+    <div style="
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 350px;
+      text-align: center;
+      font-family: 'Tajawal', sans-serif;
+      color: #333;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    ">
+            <img src="${getLogoUrl()}" alt="شعار" style="
+        width: 100px;
+        display: block;
+        margin: 0 auto 10px;
+      ">
+      <h3 style="color:#007bff;">شكرًا ${guestName}!</h3>
+      <p>شكرًا لك على زيارتك.<br>
+      سيتم التأكد من مرفقات الشاليه وتحويل مبلغ التأمين حسب الرقم الذي زودتنا به.</p>
+      <button onclick="this.parentElement.parentElement.remove()" style="
+        margin-top: 10px;
+        padding: 8px 16px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      ">إغلاق</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+
+async function openDashboard() {
+  const content = document.getElementById('dashboardContent');
+
+  content.innerHTML = `<p>جاري تحميل البيانات...</p>`;
+  showPopup('dashboardPopup');
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  const todayKey = `${year}-${month}-${day}`;
+  const startMonthKey = `${year}-${month}-01`;
+  const endMonthDay = new Date(year, today.getMonth() + 1, 0).getDate();
+  const endMonthKey = `${year}-${month}-${String(endMonthDay).padStart(2, '0')}`;
+
+  let todayCount = 0, monthCount = 0, monthIncome = 0;
+
+  const todayDoc = await db.collection(calendarCol()).doc(todayKey).get();
+if (todayDoc.exists) {
+  const data = todayDoc.data();
+    Object.values(data).forEach(period => {
+      if (period.status && period.status !== 'متاح') todayCount++;
+    });
+  }
+
+  const snapshot = await db.collection(calendarCol())
+    .where(firebase.firestore.FieldPath.documentId(), ">=", startMonthKey)
+    .where(firebase.firestore.FieldPath.documentId(), "<=", endMonthKey)
+    .get();
+
+snapshot.forEach(doc => {
+    const data = doc.data();
+    Object.values(data).forEach(period => {
+      if (period.status && period.status !== 'متاح') {
+        monthCount++;
+        monthIncome += Number(period.amount) || 0;
+      }
+    });
+});
+
+
+  const totalDays = endMonthDay * 4;
+  const occupancyRate = ((monthCount / totalDays) * 100).toFixed(1);
+
+  content.innerHTML = `
+    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
+      <div style="flex:1; min-width:120px; background:#e6f0ff; padding:10px; border-radius:10px;">
+        📅 <div>حجوزات اليوم</div><strong>${todayCount}</strong>
+      </div>
+      <div style="flex:1; min-width:120px; background:#e6f0ff; padding:10px; border-radius:10px;">
+        📆 <div>حجوزات هذا الشهر</div><strong>${monthCount}</strong>
+      </div>
+      <div style="flex:1; min-width:120px; background:#e6f0ff; padding:10px; border-radius:10px;">
+        💰 <div>الدخل الشهري</div><strong>${monthIncome} ر.ع</strong>
+      </div>
+      <div style="flex:1; min-width:120px; background:#e6f0ff; padding:10px; border-radius:10px;">
+        🏖️ <div>نسبة الإشغال</div><strong>${occupancyRate}%</strong>
+      </div>
+    </div>
+
+    <canvas id="myChart" style="max-width:500px;margin:auto;"></canvas>
+  `;
+
+  setTimeout(() => {
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+        datasets: [{
+          label: 'الدخل الشهري (ر.ع)',
+          data: [500, 700, 800, 600, 750, 950, 1100, 900, 800, 950, 1000, 1200],
+          backgroundColor: '#007bff'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true }},
+        plugins: { legend: { display: false }}
+      }
+    });
+  }, 100);
+}
+function showNotification(message) {
+  const notif = document.getElementById('notifications');
+  notif.textContent = message;
+  notif.style.display = 'block';
+  setTimeout(() => {
+    notif.style.display = 'none';
+  }, 5000);
+}
+
+function createReservation(name, date, time, location) {
+  const id = Date.now().toString();
+
+  db.collection("reservations").doc(id).set({
+    name: name,
+    date: date,
+    time: time,
+    location: location
+  })
+  .then(() => {
+    const link = `https://santorinichalet.github.io/santorini-calendar/reservation.html?id=${id}`;
+    console.log("🔗 رابط الحجز:", link);
+    alert(`✅ تم الحجز!\nرابط الحجز: ${link}`);
+    navigator.clipboard.writeText(link).then(() => {
+      console.log("📋 تم نسخ الرابط إلى الحافظة.");
+    });
+  })
+  .catch(error => {
+    console.error("❌ خطأ في إنشاء الحجز:", error);
+  });
+}
+function closeAllPopups() {
+  document.querySelectorAll('.popup').forEach(p => p.style.display = 'none');
+}
+
+function showPopup(id) {
+  closeAllPopups();
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.error(`❌ لا يوجد عنصر بالمعرف: ${id}`);
+      return;
+    }
+    el.style.display = 'block';
+  }, 100);
+}
+
+function openExpenses(month) {
+  closeAllPopups();
+  loadExpenses(month).catch(e => {
+    console.error('💰 خطأ في تحميل المصروفات', e);
+    alert('حدث خطأ أثناء تحميل المصروفات');
+  });
+}
+
+function generateReport() {
+  closeAllPopups();
+  showPopup('reportPopup');
+  setTimeout(() => {
+    const btn = document.getElementById('generateReportBtn');
+    if (btn) btn.click();
+    else console.error('❌ زر التقرير غير موجود');
+  }, 200);
+}
+
+
+</script>
+
+<script>
+let currentProperty = localStorage.getItem('property') || 'chalet';
+
+function calendarCol() {
+  return (currentProperty === 'chalet') ? 'calendar2025' : 'calendar2025_apartment';
+}
+
+
+function expensesDocId(month) {
+  return (currentProperty === 'chalet')
+    ? `expenses-2025-${month}`              // يبقى القديم كما هو للشاليه
+    : `expenses-2025-${month}-apartment`;   // نسخة منفصلة للشقة
+}
+
+
+function highlightPropertyButton() {
+  document.querySelectorAll('.property-switch .prop-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  if (currentProperty === 'chalet') {
+    document.querySelector('.property-switch .prop-btn:nth-child(1)').classList.add('active');
+  } else {
+    document.querySelector('.property-switch .prop-btn:nth-child(2)').classList.add('active');
+  }
+}
+
+
+// تبديل وضع الحجز حسب العقار
+function applyPropertyBookingMode() {
+  const periodSelect = document.getElementById('periodSelect');
+  const periodLabel = document.querySelector('label[for="periodSelect"]');
+  const timePeriodInput = document.getElementById('timePeriod');
+  const timePeriodLabel = document.getElementById('timePeriodLabel');
+
+  if (!periodSelect) return;
+
+  if (typeof currentProperty !== 'undefined' && currentProperty === 'apartment') {
+    // الشقة: يوم كامل فقط
+    periodSelect.value = 'fullDay';
+    periodSelect.disabled = true;
+    if (periodLabel) periodLabel.style.display = 'none';
+    if (timePeriodInput) timePeriodInput.style.display = 'none';
+    if (timePeriodLabel) timePeriodLabel.style.display = 'none';
+    try { currentPeriod = 'fullDay'; } catch(e) {}
+  } else {
+    // الشاليه: كل الفترات متاحة
+    periodSelect.disabled = false;
+    if (periodLabel) periodLabel.style.display = '';
+    // أظهر حقول الوقت حسب اختيار الفترة
+    if (timePeriodInput && timePeriodLabel) {
+      const show = (periodSelect.value === 'morning' || periodSelect.value === 'evening');
+      timePeriodInput.style.display = show ? 'block' : 'none';
+      timePeriodLabel.style.display = show ? 'block' : 'none';
+    }
+  }
+}
+
+function switchProperty(type) {
+  if (type === currentProperty) return;
+  currentProperty = type;
+  localStorage.setItem('property', currentProperty);
+  highlightPropertyButton();
+  if (typeof buildCalendar === 'function') {
+    buildCalendar();
+updateLogos();       // 👈 لكي يتبدّل الشعار فوراً بعد التبديل
+
+  }
+}
+
+// Ensure property buttons reflect stored property on load
+document.addEventListener('DOMContentLoaded', () => {
+  try{applyPropertyBookingMode();}catch(e){}
+  highlightPropertyButton();
+  buildCalendar();   // 👈 استدعاء أولي
+});
+
+</script>
 
 </body>
 </html>
