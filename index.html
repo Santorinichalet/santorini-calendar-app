@@ -797,13 +797,21 @@ document.getElementById('deleteExpense').addEventListener('click', () => {
     }
   } catch(e) {}
 // تحميل بيانات الحجز لليوم من Firebase
-     db.collection(calendarCol()).doc(currentDateKey).get().then(doc => {
-        if (doc.exists) {
-          currentBookingData = doc.data();
-        } else {
-          currentBookingData = {};
-        }
-      });
+db.collection(calendarCol()).doc(currentDateKey).get().then(doc => {
+  currentBookingData = doc.exists ? doc.data() : {};
+
+  // 👈 للشقة: ثبّت يوم كامل ثم فعّل change ليتم تعبئة الحقول فورًا
+  if (currentProperty === 'apartment') {
+    const ps = document.getElementById('periodSelect');
+    currentPeriod = 'fullDay';
+    if (ps) {
+      ps.value = 'fullDay';
+      ps.disabled = true;
+      ps.dispatchEvent(new Event('change')); // 🔔 هذا هو المفتاح
+    }
+  }
+});
+
     });
 
     // حفظ بيانات الحجز في Firestore
@@ -929,18 +937,27 @@ copyBtn.onclick = () => {
       const data = currentBookingData[currentPeriod];
       const cardContent = document.getElementById('bookingCardContent');
       const periodNames = {morning: 'صباح', evening: 'مساء', fullDay: 'يوم كامل', overnight: 'مبيت'};
+// تنسيق التاريخ من المفتاح الحالي
+const [yy, mm, dd] = currentDateKey.split('-');
+const dateStr = `${dd}/${mm}/${yy}`;
 
-      cardContent.innerHTML = `
-        <p><strong>نوع الحجز:</strong> ${data.status}</p>
-        <p><strong>الفترة:</strong> ${periodNames[currentPeriod]}</p>
-        <p><strong>الفترة الزمنية:</strong> ${data.timePeriod || 'لا توجد'}</p>
-        <p><strong>السعر:</strong> ${data.amount} ريال عماني</p>
-        ${data.status === 'عربون' ? `<p><strong>العربون:</strong> ${data.deposit} ريال عماني</p>` : ''}
-        <p><strong>عدد الضيوف:</strong> ${data.guestCount || 'غير محدد'}</p>
-        <p><strong>اسم الضيف:</strong> ${data.guestName}</p>
-        <p><strong>رقم الهاتف:</strong> ${data.guestPhone}</p>
-        <p><strong>ملاحظات:</strong> ${data.notes || 'لا توجد'}</p>
-      `;
+// (اختياري) اسم يوم الأسبوع
+const weekdays = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const weekdayName = weekdays[new Date(currentDateKey).getDay()];
+
+cardContent.innerHTML = `
+  <p><strong>التاريخ:</strong> ${dateStr} <span style="color:#777;">${weekdayName}</span></p>
+  <p><strong>نوع الحجز:</strong> ${data.status}</p>
+  ${currentProperty === 'chalet' ? `<p><strong>الفترة:</strong> ${periodNames[currentPeriod]}</p>` : ''}
+  ${currentProperty === 'chalet' ? `<p><strong>الفترة الزمنية:</strong> ${data.timePeriod || 'لا توجد'}</p>` : ''}
+  <p><strong>السعر:</strong> ${data.amount} ريال عماني</p>
+  ${data.status === 'عربون' ? `<p><strong>العربون:</strong> ${data.deposit} ريال عماني</p>` : ''}
+  <p><strong>عدد الضيوف:</strong> ${data.guestCount || 'غير محدد'}</p>
+  <p><strong>اسم الضيف:</strong> ${data.guestName}</p>
+  <p><strong>رقم الهاتف:</strong> ${data.guestPhone}</p>
+  <p><strong>ملاحظات:</strong> ${data.notes || 'لا توجد'}</p>
+`;
+
 
       showPopup('bookingCardPopup');
     }
