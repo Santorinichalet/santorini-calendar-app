@@ -285,6 +285,17 @@
   padding: 8px 14px; border-radius: 20px; cursor: pointer; font-weight: 700;
 }
 .prop-btn.active { background: #024488; color: #fff; border-color: #024488; }
+.owner-dot{
+  position:absolute;
+  bottom:6px;
+  left:50%;
+  transform:translateX(-50%);
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#d00; /* أحمر = المالك */
+}
+
 </style>
 </head>
 <body>
@@ -333,6 +344,13 @@
 <option value="عربون">عربون</option>
 <option value="متاح">متاح</option>
 </select>
+<label for="bookingSource">مصدر الحجز:</label>
+<select id="bookingSource">
+  <option value="">اختر المصدر</option>
+  <option value="المالك">المالك</option>
+  <option value="مستثمر">مستثمر</option>
+</select>
+
 <label for="amount">السعر:</label>
 <input id="amount" placeholder="ريال عماني" type="number"/>
 <div class="deposit-group" id="depositGroup" style="display:none;">
@@ -511,6 +529,19 @@ case 'evening': text = data[period].timePeriod ? `${data[period].timePeriod}` : 
           div.textContent = text;
           dayEl.appendChild(div);
         }
+// علامة مصدر الحجز (مالك = دائرة حمراء أسفل اليوم)
+const existingDot = dayEl.querySelector('.owner-dot');
+if (existingDot) existingDot.remove();
+
+const hasOwnerSource = ['morning','evening','fullDay','overnight']
+  .some(p => data[p] && data[p].source === 'المالك');
+
+if (hasOwnerSource) {
+  const dot = document.createElement('div');
+  dot.className = 'owner-dot';
+  dayEl.appendChild(dot);
+}
+
       });
     }
 
@@ -719,6 +750,9 @@ document.getElementById('deleteExpense').addEventListener('click', () => {
         document.getElementById('guestName').value = periodData.guestName || '';
         document.getElementById('guestPhone').value = periodData.guestPhone || '';
         document.getElementById('notes').value = periodData.notes || '';
+const srcSel = document.getElementById('bookingSource');
+if (srcSel) srcSel.value = (periodData.source || '');
+
       }
 
       if (currentPeriod === 'morning' || currentPeriod === 'evening') {
@@ -750,6 +784,9 @@ document.getElementById('deleteExpense').addEventListener('click', () => {
         document.getElementById('guestName').value = '';
         document.getElementById('guestPhone').value = '';
         document.getElementById('notes').value = '';
+        const srcSel = document.getElementById('bookingSource');
+if (srcSel) srcSel.value = '';
+
       }
       timePeriodInput.value = '';
       timePeriodInput.style.display = (currentPeriod === 'morning' || currentPeriod === 'evening') ? 'block' : 'none';
@@ -893,7 +930,8 @@ document.getElementById('saveBooking').addEventListener('click', async () => {
   guestPhone: document.getElementById('guestPhone').value.trim(),
   guestCount: parseInt(document.getElementById('guestCount').value) || 0,
   notes: document.getElementById('notes').value.trim(),
-  timePeriod: (currentPeriod === 'morning' || currentPeriod === 'evening') ? timePeriodInput.value.trim() : ''
+  timePeriod: (currentPeriod === 'morning' || currentPeriod === 'evening') ? timePeriodInput.value.trim() : '',
+  source: (document.getElementById('bookingSource') ? document.getElementById('bookingSource').value : '')
 };
 
 
