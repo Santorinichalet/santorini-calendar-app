@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 
 <html dir="rtl" lang="ar">
@@ -1550,5 +1551,110 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </script>
 
+<!-- تذكير إغلاق اليوم في Airbnb -->
+<div class="popup" id="airbnbReminderPopup" style="max-width: 420px;">
+  <button class="close-btn" onclick="closePopup('airbnbReminderPopup')">×</button>
+  <h3>تذكير Airbnb</h3>
+  <p id="airbnbReminderText" style="text-align:center; line-height:1.6;">
+    الرجاء إغلاق هذا اليوم في حساب Airbnb لمنع الحجوزات المزدوجة.
+  </p>
+  <label style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+    <input type="checkbox" id="airbnbDontRemind">
+    لا تذكرني لهذا اليوم
+  </label>
+  <div class="button-group">
+    <button class="action" id="airbnbDoneBtn">✅ تم الإغلاق</button>
+    <button class="action secondary" id="airbnbLaterBtn">لاحقًا</button>
+  </div>
+</div>
+<script>
+// ===== Airbnb Reminder =====
+function showAirbnbReminder(dateKey) {
+  try {
+    if (localStorage.getItem('airbnb_suppressed_' + dateKey) === '1') return;
+
+    var txt = document.getElementById('airbnbReminderText');
+    if (txt) txt.innerHTML = 'الرجاء إغلاق هذا اليوم في حساب Airbnb:<br><strong>' + (dateKey || '') + '</strong>';
+
+    var doneBtn = document.getElementById('airbnbDoneBtn');
+    var laterBtn = document.getElementById('airbnbLaterBtn');
+    var dontRemind = document.getElementById('airbnbDontRemind');
+
+    if (doneBtn) {
+      doneBtn.onclick = function() {
+        if (dontRemind && dontRemind.checked) {
+          localStorage.setItem('airbnb_suppressed_' + dateKey, '1');
+        }
+        if (typeof closePopup === 'function') closePopup('airbnbReminderPopup');
+        if (typeof toast === 'function') toast('تذكير تمّ — لا تنس الإغلاق في Airbnb إن لم تفعل.', 'info');
+      };
+    }
+    if (laterBtn) {
+      laterBtn.onclick = function() {
+        if (typeof closePopup === 'function') closePopup('airbnbReminderPopup');
+      };
+    }
+
+    if (typeof showPopup === 'function') {
+      showPopup('airbnbReminderPopup');
+    } else {
+      var el = document.getElementById('airbnbReminderPopup');
+      if (el) el.style.display = 'block';
+    }
+  } catch (e) {
+    console && console.warn && console.warn('Airbnb reminder error:', e);
+  }
+}
+
+// Hook after saveBooking click to show reminder for apartment bookings
+document.addEventListener('DOMContentLoaded', function() {
+  var saveBtn = document.getElementById('saveBooking');
+  if (!saveBtn) return;
+
+  // Use capture to ensure our hook runs regardless of inner handlers
+  saveBtn.addEventListener('click', function() {
+    // Delay slightly to allow the original save to complete
+    setTimeout(function() {
+      try {
+        // Try to detect date key
+        var dateKey = (typeof currentDateKey !== 'undefined' && currentDateKey) ? currentDateKey : '';
+        if (!dateKey) {
+          var dateEl = document.getElementById('bookingDate') || document.getElementById('date') || document.querySelector('input[type="date"]');
+          if (dateEl && dateEl.value) dateKey = dateEl.value;
+        }
+        if (!dateKey) {
+          // Fallback to today
+          dateKey = new Date().toISOString().slice(0,10);
+        }
+
+        // Detect property
+        var propertyValue = (typeof currentProperty !== 'undefined' && currentProperty) ? currentProperty : '';
+        if (!propertyValue) {
+          var propEl = document.getElementById('property') || document.getElementById('propertySelect') || document.querySelector('[name="property"]');
+          if (propEl && ('value' in propEl)) propertyValue = propEl.value;
+        }
+
+        // Detect status
+        var statusValue = (typeof status !== 'undefined' && status) ? status : '';
+        if (!statusValue) {
+          var stEl = document.getElementById('status') || document.getElementById('bookingStatus') || document.querySelector('[name="status"]');
+          if (stEl && ('value' in stEl)) statusValue = stEl.value;
+        }
+
+        // Normalize possible Arabic labels
+        var isApartment = (propertyValue === 'apartment' || propertyValue === 'الشقة' || /apartment/i.test(propertyValue));
+        var isBooked = (statusValue === 'محجوز' || statusValue === 'عربون' || /reserved|deposit/i.test(statusValue));
+
+        if (isApartment && isBooked) {
+          showAirbnbReminder(dateKey);
+        }
+      } catch (e) {
+        console && console.warn && console.warn('Airbnb hook error:', e);
+      }
+    }, 700);
+  }, { capture: true });
+});
+// ===== End Airbnb Reminder =====
+</script>
 </body>
 </html>
