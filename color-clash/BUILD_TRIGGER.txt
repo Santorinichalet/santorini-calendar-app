@@ -1,0 +1,2 @@
+Trigger APK rebuild after fixing archive decoding.
+Timestamp: 2026-09-03T23:02+04:00
