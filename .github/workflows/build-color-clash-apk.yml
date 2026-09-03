@@ -17,17 +17,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Restore Color Clash source archive
-        run: |
-          rm -rf color-clash-build
-          mkdir color-clash-build
-          base64 -d ColorClash-Android-Source.zip > /tmp/ColorClash-Android-Source.zip
-          unzip -q /tmp/ColorClash-Android-Source.zip -d color-clash-build
-          ls -la color-clash-build
       - name: Build debug APK
-        working-directory: color-clash-build
+        working-directory: color-clash-app
         run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: ColorClash-LAN-APK
-          path: color-clash-build/app/build/outputs/apk/debug/app-debug.apk
+          path: color-clash-app/app/build/outputs/apk/debug/app-debug.apk
