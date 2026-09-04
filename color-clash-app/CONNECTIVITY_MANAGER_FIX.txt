@@ -1,0 +1,1 @@
+ConnectivityManager Wi-Fi IPv4 detection enabled.
