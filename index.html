@@ -1,0 +1,3547 @@
+
+
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar">
+<head>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>نُزُل — إدارة العقارات</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/swiper@11/swiper-bundle.min.js';document.head.appendChild(s);"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.css" rel="stylesheet" onerror="this.onerror=null;this.href='https://unpkg.com/swiper@11/swiper-bundle.min.css';"/>
+<link href="manifest.json" rel="manifest"/>
+<meta content="#00396f" name="theme-color"/>
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<meta name="apple-mobile-web-app-title" content="نُزُل"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+    html, body {
+      font-family: 'Tajawal', sans-serif;
+      background: #ffffff;
+      margin: 0; padding: 0; height: 100%; overflow-x: hidden; color: #333;
+    }
+    .swiper { width: 100vw; height: 100vh; }
+    .swiper-slide {
+      width: 80%; max-width: 420px;
+      opacity: 0.3; transform: scale(0.9);
+      transition: all 0.4s ease;
+      box-sizing: border-box;
+      padding: 10px;
+    }
+    .swiper-slide-active {
+      opacity: 1; transform: scale(1);
+      z-index: 10;
+    }
+    .month-title {
+      font-size: 22px; font-weight: 700; margin: 12px 0 8px;
+      color: #024488; text-align: center; width: 100%; display: block;
+    }
+    .weekday-row {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      width: 100%; font-size: 13px; text-align: center;
+      color: #666; margin-bottom: 5px;
+    }
+    .calendar-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 6px; width: 100%;
+    }
+    .day {
+      padding: 6px 0 24px; text-align: center;
+      background: #f0f0f0; border-radius: 10px;
+      cursor: pointer; font-size: 15px;
+      position: relative; overflow: visible;
+      transition: background 0.2s ease;
+      user-select: none;
+    }
+.day.empty {
+  background: #eaeaea;   /* لون رمادي واضح */
+  border-radius: 10px;
+  cursor: default;
+  box-shadow: none;
+  opacity: 0.6;
+  color: transparent;   /* إخفاء أي نص داخلي */
+  border: 1px solid #ddd;
+}
+
+
+
+    .day-number {
+      font-size: 15px; font-weight: normal;
+    }
+    .booking-line {
+      font-size: 12px; margin-top: 2px;
+      color: #444; user-select: none;
+      text-align: center;
+      font-weight: bold;
+    }
+    .booking-line.red { color: #b22222; } /* لون أحمر داكن */
+    .booking-line.orange { color: #007bff; }
+    .day.today {
+      border: 2px solid #ff6b35;
+      font-weight: bold;
+      background: #fff3ee;
+      color: #ff6b35;
+      position: relative;
+    }
+    .day.today::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #ff6b35;
+    }
+    .day:hover { background: #ddd; }
+
+    /* Popup styles */
+    .popup {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff; padding: 20px 25px;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.15);
+      z-index: 9999; display: none;
+      width: 90%; max-width: 420px;
+      color: #333; box-sizing: border-box;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .popup h3 {
+      margin-top: 0; font-size: 20px; color: #007bff;
+      text-align: center;
+    }
+    .popup label {
+      font-weight: 600; margin-top: 12px;
+      display: block; color: #444;
+    }
+    .popup input[type=text],
+    .popup input[type=number],
+    .popup textarea,
+    .popup select {
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 14px;
+      width: 100%;
+      display: block;
+      margin-top: 4px;
+    }
+    input[type=checkbox] {
+      transform: scale(1.3);
+      margin-left: 8px;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+    .popup button.action {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 20px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease;
+    }
+    .popup button.action:hover {
+      background: #218838;
+    }
+    .popup .close-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 30px;
+      color: #888;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      width: 30px;
+      height: 30px;
+      text-align: center;
+    }
+    .close-btn:hover {
+      color: #333;
+    }
+
+    /* تعديل زر عرض بطاقة الحجز ليتناسب مع زر الحفظ ضمن مجموعة الأزرار */
+    .button-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .button-group .action {
+      flex: 1;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      border: none;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+
+    .button-group .action.secondary {
+      background-color: #007bff;
+    }
+
+    .button-group .action.secondary:hover {
+      background-color: #0056b3;
+    }
+
+    .button-group .action:hover {
+      background-color: #218838;
+    }
+
+    /* زر عرض بطاقة الحجز مخفي بشكل افتراضي */
+    #showBookingCard {
+      display: none;
+    }
+
+    #goToToday {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 50px;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .month-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .month-buttons button {
+      background-color: #024488;
+      color: white;
+      padding: 10px 18px;
+      font-size: 15px;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .month-buttons button:hover {
+      transform: scale(1.05);
+    }
+
+    /* Expenses list */
+    #expenseList {
+      margin-top: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 14px;
+      background: #fafafa;
+    }
+    #expenseList div {
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #ddd;
+    }
+    .logo-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .logo-container img {
+      width: 160px;
+      max-width: 90%;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease;
+    }
+
+    .logo-container img:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+#bookingCardPopup { direction: rtl; }
+/* صف البيانات في البطاقة */
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: center;
+}
+.card-row:last-child { border-bottom: none; }
+.card-row .label { color: #888; font-size: 12px; flex:1; text-align: right; }
+.card-row .value { font-weight: bold; color: #222; font-size: 14px; flex:1; text-align: left; }
+.card-highlight {
+  background: #f0f7ff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+  color: #004d99;
+}
+
+  
+.property-switch {
+  display: flex; gap: 10px; justify-content: center;
+  padding: 8px 12px; border-bottom: 1px solid #eee;
+}
+.prop-btn {
+  background: #eef4ff; color: #024488; border: 1px solid #d7e3ff;
+  padding: 8px 14px; border-radius: 20px; cursor: pointer; font-weight: 700;
+}
+.prop-btn.active { background: #024488; color: #fff; border-color: #024488; }
+.owner-dot{
+  position:absolute;
+  bottom:6px;
+  left:50%;
+  transform:translateX(-50%);
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#d00; /* أحمر = المالك */
+}
+
+/* تلوين صلالة - بسيط وموحد */
+.day.salalah-booked {
+  background: #004d99 !important;
+  color: #fff !important;
+}
+.day.salalah-booked .day-number {
+  color: #fff !important;
+}
+.day.salalah-deposit {
+  background: #e6a800 !important;
+  color: #fff !important;
+}
+.day.salalah-deposit .day-number {
+  color: #fff !important;
+}
+.salalah-night-label {
+  font-size: 10px;
+  color: #fff;
+  text-align: center;
+  margin-top: 1px;
+  font-weight: bold;
+  line-height: 1;
+}
+/* ===== CSS التقرير ===== */
+.report-prop-card {
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #e0e0e0;
+}
+.report-prop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.report-prop-name { font-size: 15px; font-weight: bold; }
+.report-occupancy {
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 10px;
+  border-radius: 20px;
+  color: #fff;
+}
+.report-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 3px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+.report-row:last-child { border-bottom: none; }
+.report-row .rl { color: #999; }
+.report-row .rv { font-weight: bold; }
+.report-occ-bar {
+  height: 7px;
+  border-radius: 4px;
+  background: #ececec;
+  margin: 6px 0 2px;
+  overflow: hidden;
+}
+.report-occ-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+.report-total-box {
+  background: linear-gradient(135deg,#eaf2ff,#f0f9ff);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 14px;
+  border: 2px solid #004d99;
+}
+.report-total-box h4 { margin: 0 0 8px; color: #004d99; font-size: 15px; }
+.chart-wrap {
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid #e0e0e0;
+}
+.chart-wrap h4 { margin: 0 0 10px; color: #333; font-size: 14px; text-align: center; }
+
+</style>
+</head>
+<body>
+<div id="notifications" style="
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #ffeaa7;
+  color: #2d3436;
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  display: none;
+  z-index: 1000;
+"></div>
+<div class="popup" id="dashboardPopup" style="max-width:600px;">
+<button class="close-btn" onclick="closePopup('dashboardPopup')">×</button>
+<h3 style="color:#007bff;">لوحة التحكم</h3>
+<div id="dashboardContent" style="text-align:center;"></div>
+</div>
+<div class="property-switch" id="propertySwitch"><button class="prop-btn active" onclick="switchProperty('chalet')">🏖 سنتوريني</button><button class="prop-btn" onclick="switchProperty('apartment')">🏢 السيفة</button><button class="prop-btn" onclick="switchProperty('salalah')">🌴 صلالة</button></div><div class="logo-container">
+<img id="mainLogo" src="https://i.ibb.co/271BVWXd/Santorini-Logo.png" alt="Santorini-Logo" border="0">
+</div>
+<div class="swiper">
+<div class="swiper-wrapper" id="monthsContainer"></div>
+</div>
+<button id="goToToday">اليوم</button>
+<!-- نافذة الحجز -->
+<div class="popup" id="bookingPopup">
+<button class="close-btn" onclick="closePopup('bookingPopup')">×</button>
+<h3>تفاصيل الحجز</h3>
+<label for="periodSelect" id="periodLabel">الفترة:</label>
+<select id="periodSelect" style="display:none;">
+<option value="">اختر الفترة</option>
+<option value="morning">صباح</option>
+<option value="evening">مساء</option>
+<option value="fullDay">يوم كامل</option>
+<option value="overnight">مبيت</option>
+</select>
+<div id="periodBtns" style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:4px;">
+  <button type="button" class="period-btn" data-period="morning">صباح</button>
+  <button type="button" class="period-btn" data-period="evening">مساء</button>
+  <button type="button" class="period-btn" data-period="fullDay">يوم كامل</button>
+  <button type="button" class="period-btn" data-period="overnight">مبيت</button>
+</div>
+<label for="timePeriod" id="timePeriodLabel" style="display:none;">الفترة الزمنية:</label>
+<input id="timePeriod" placeholder="مثال: 8-12 ص أو 4-8 م" style="display:none;" type="text"/>
+<select id="status" style="display:none;">
+<option value="">اختر</option>
+<option value="محجوز">محجوز</option>
+<option value="عربون">عربون</option>
+<option value="متاح">متاح</option>
+</select>
+
+<label for="bookingSource" id="bookingSourceLabel">مصدر الحجز:</label>
+<select id="bookingSource">
+  <option value="">اختر المصدر</option>
+  <option value="المالك">المالك</option>
+  <option value="مستثمر">مستثمر</option>
+</select>
+<div id="sourceLocked" style="display:none; padding:9px 12px; border-radius:10px; font-weight:bold; color:#fff;">
+</div>
+
+<label for="amount">السعر الكامل:</label>
+<input id="amount" placeholder="ريال عماني" type="number" inputmode="decimal"/>
+
+<label for="paidAmount">المدفوع حتى الآن:</label>
+<input id="paidAmount" placeholder="0" type="number" inputmode="decimal"/>
+<div style="display:flex; gap:8px; margin-top:6px;">
+  <button type="button" id="paidNone" style="flex:1; border:none; border-radius:8px; padding:7px; font-size:12px; background:#eef2f7; color:#334155; cursor:pointer; font-family:inherit;">لم يدفع</button>
+  <button type="button" id="paidFull" style="flex:1; border:none; border-radius:8px; padding:7px; font-size:12px; background:#e6f6ee; color:#00794f; cursor:pointer; font-family:inherit;">دفع كامل المبلغ</button>
+</div>
+<div id="remaining" style="margin-top:8px; font-weight:bold; min-height:20px;"></div>
+<div class="deposit-group" id="depositGroup" style="display:none;">
+<input id="deposit" type="hidden"/>
+</div>
+<label for="guestCount">عدد الضيوف:</label>
+<input id="guestCount" min="1" placeholder="أدخل عدد الضيوف" type="number"/>
+<div id="breakfastGroup" style="display:none; margin-top:10px; padding:10px; border:1px solid #cfe3ff; border-radius:10px; background:#f4f9ff;">
+  <label for="breakfastCheck" style="display:flex; align-items:center; gap:10px; margin:0; font-weight:bold; color:#004d99; cursor:pointer;">
+    <input id="breakfastCheck" type="checkbox" style="width:20px; height:20px; margin:0; cursor:pointer;"/>
+    <span>🍳 إفطار — 8 ر.ع للحجز</span>
+  </label>
+</div>
+<hr style="margin: 20px 0;"/>
+<label for="guestName">اسم الضيف:</label>
+<input id="guestName" placeholder="أدخل اسم الضيف" type="text"/>
+<label for="guestPhone">رقم الهاتف:</label>
+<input id="guestPhone" placeholder="أدخل رقم الهاتف" type="text"/>
+<label for="notes">ملاحظات:</label>
+<textarea id="notes" placeholder="ملاحظات إضافية" rows="2"></textarea>
+<div class="button-group">
+<button class="action" id="saveBooking">💾 حفظ</button>
+<button class="action secondary" id="showBookingCard">🃏 عرض بطاقة الحجز</button>
+<button class="action" id="deleteBooking" style="display:none; background:#c62828;">🗑 حذف الحجز</button>
+<div id="copyReservationLink" style="display:none; margin-top:10px; cursor:pointer; color:#007bff;">
+📋 نسخ رابط الحجز
+  </div>
+</div>
+</div>
+<!-- نافذة حجز صلالة (من / إلى) -->
+<div class="popup" id="salalahPopup">
+  <button class="close-btn" onclick="closePopup('salalahPopup')">×</button>
+  <h3 style="color:#024488;">🌴 حجز صلالة</h3>
+  <label for="salalahCheckin">تاريخ الدخول (Check-in):</label>
+  <input id="salalahCheckin" type="text" readonly style="background:#e9f3ff; color:#004d99; font-weight:bold; cursor:default; border:2px solid #004d99;"/>
+  <label for="salalahCheckout" style="margin-top:10px;">تاريخ الخروج (Check-out):</label>
+  <input id="salalahCheckout" type="date"/>
+  <div id="salalahStayInfo" style="margin-top:6px; font-size:13px; font-weight:bold; color:#00794f; min-height:18px;"></div>
+  <select id="salalahStatus" style="display:none;">
+    <option value="">اختر</option>
+    <option value="محجوز">محجوز</option>
+    <option value="عربون">عربون</option>
+    <option value="متاح">حذف الحجز</option>
+  </select>
+  <div id="salalahDepositGroup" style="display:none;">
+    <input id="salalahDeposit" type="hidden"/>
+  </div>
+
+  <label for="salalahSource" id="salalahSourceLabel" style="margin-top:10px;">مصدر الحجز:</label>
+  <select id="salalahSource">
+    <option value="">اختر المصدر</option>
+    <option value="المالك">المالك</option>
+    <option value="مستثمر">مستثمر</option>
+  </select>
+  <div id="salalahSourceLocked" style="display:none; padding:9px 12px; border-radius:10px; font-weight:bold; color:#fff;"></div>
+
+  <label for="salalahAmount" style="margin-top:10px;">السعر الكامل:</label>
+  <input id="salalahAmount" placeholder="ريال عماني" type="number" inputmode="decimal"/>
+
+  <label for="salalahPaid" style="margin-top:10px;">المدفوع حتى الآن:</label>
+  <input id="salalahPaid" placeholder="0" type="number" inputmode="decimal"/>
+  <div style="display:flex; gap:8px; margin-top:6px;">
+    <button type="button" id="salalahPaidNone" style="flex:1; border:none; border-radius:8px; padding:7px; font-size:12px; background:#eef2f7; color:#334155; cursor:pointer; font-family:inherit;">لم يدفع</button>
+    <button type="button" id="salalahPaidFull" style="flex:1; border:none; border-radius:8px; padding:7px; font-size:12px; background:#e6f6ee; color:#00794f; cursor:pointer; font-family:inherit;">دفع كامل المبلغ</button>
+  </div>
+  <div id="salalahRemaining" style="margin-top:8px; font-weight:bold; min-height:20px;"></div>
+  <label for="salalahGuestCount" style="margin-top:10px;">عدد الضيوف:</label>
+  <input id="salalahGuestCount" min="1" placeholder="أدخل عدد الضيوف" type="number"/>
+  <hr style="margin:16px 0;"/>
+  <label for="salalahGuestName">اسم الضيف:</label>
+  <input id="salalahGuestName" placeholder="أدخل اسم الضيف" type="text"/>
+  <label for="salalahGuestPhone" style="margin-top:10px;">رقم الهاتف:</label>
+  <input id="salalahGuestPhone" placeholder="أدخل رقم الهاتف" type="text"/>
+  <label for="salalahNotes" style="margin-top:10px;">ملاحظات:</label>
+  <textarea id="salalahNotes" placeholder="ملاحظات إضافية" rows="2"></textarea>
+  <div class="button-group">
+    <button class="action" id="saveSalalahBooking">💾 حفظ</button>
+    <button class="action secondary" id="showSalalahCard">🃏 بطاقة الحجز</button>
+    <button class="action" id="deleteSalalahBooking" style="display:none; background:#c62828;">🗑 حذف الحجز</button>
+  </div>
+</div>
+
+<!-- بطاقة الحجز -->
+<div class="popup" id="bookingCardPopup" style="max-width:360px; width:90%; padding:0; overflow:hidden; border-radius:20px; top:50%; left:50%; transform:translate(-50%,-50%)">
+  <div id="cardHeader" style="
+    background: linear-gradient(135deg, #004d99, #0077cc);
+    padding: 24px 20px 16px;
+    text-align: center;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  ">
+    <button class="close-btn" onclick="closePopup('bookingCardPopup')" style="
+      position:absolute; top:10px; left:10px;
+      background:rgba(255,255,255,0.2); color:#fff;
+      border:none; border-radius:50%; width:28px; height:28px;
+      font-size:16px; cursor:pointer; line-height:1;
+    ">×</button>
+    <img id="cardLogo" src="https://i.ibb.co/271BVWXd/Santorini-Logo.png" alt="logo" style="
+      width:80px; height:80px; object-fit:contain;
+      border-radius:12px; background:#fff;
+      padding:6px; margin: 0 auto 8px auto;
+      display:block;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    "/>
+    <div id="cardPropertyName" style="color:#fff; font-size:18px; font-weight:bold; text-align:center;"></div>
+    <div id="cardStatus" style="
+      display:inline-block; margin-top:6px;
+      padding:3px 14px; border-radius:20px;
+      font-size:13px; font-weight:bold;
+      background:rgba(255,255,255,0.25); color:#fff;
+    "></div>
+  </div>
+  <div id="bookingCardContent" style="
+    padding: 16px 20px 20px;
+    font-size: 14px;
+    line-height: 1.9;
+    direction: rtl;
+    background: #fff;
+  "></div>
+  <div style="padding: 0 20px 16px; background:#fff;">
+    <button onclick="shareBookingCard()" style="
+      width:100%; padding:10px;
+      background: linear-gradient(135deg, #004d99, #0077cc);
+      color:#fff; border:none; border-radius:12px;
+      font-size:14px; font-weight:bold; cursor:pointer;
+    ">📤 مشاركة البطاقة</button>
+  </div>
+</div>
+<!-- نافذة المصروفات -->
+<div class="popup" id="expensesPopup" style="max-width: 350px;">
+<button class="close-btn" onclick="closePopup('expensesPopup')">×</button>
+<h3>المصروفات</h3>
+<label for="expenseTypeSelect">نوع المصروف:</label>
+<select id="expenseTypeSelect" style="width: 100%; padding: 6px; font-size: 14px;">
+<option disabled="" selected="" value="">اختر نوع المصروف</option>
+<option value="كهرباء">كهرباء</option>
+<option value="ماء">ماء</option>
+<option value="رواتب">رواتب</option>
+<option value="تنظيف">تنظيف</option>
+<option value="انترنت">انترنت</option>
+<option value="صيانة">صيانة</option>
+<option value="أخرى">أخرى</option>
+</select>
+<input id="expenseTypeInput" placeholder="أدخل نوع مصروف جديد" style="margin-top: 10px; display:none; width: 100%; padding: 6px; font-size: 14px;" type="text"/>
+<label for="expenseAmount">المبلغ:</label>
+<input id="expenseAmount" placeholder="ريال عماني" type="number"/>
+<div style="display: flex; justify-content: space-between; gap: 10px;">
+<button class="action" id="saveExpense" style="width: 48%;">حفظ</button>
+<button class="action" id="deleteExpense" style="width: 48%; background: #dc3545;">حذف</button>
+</div>
+<div id="expenseList"></div>
+</div>
+<!-- نافذة التقرير -->
+<div class="popup" id="reportPopup" style="max-width:480px; width:95%; max-height:85vh; overflow-y:auto; padding:20px;">
+<button class="close-btn" onclick="closePopup('reportPopup')">×</button>
+<h3 style="text-align:center; color:#004d99; margin-bottom:14px;">📊 التقرير المقارن</h3>
+
+<div style="display:flex; gap:8px; margin-bottom:12px;">
+  <div style="flex:1;">
+    <label style="font-size:12px; color:#666;">من:</label>
+    <input id="reportFromDate" type="date" max="2100-12-31" style="width:100%; padding:6px; border-radius:8px; border:1px solid #ccc;"/>
+  </div>
+  <div style="flex:1;">
+    <label style="font-size:12px; color:#666;">إلى:</label>
+    <input id="reportToDate" type="date" max="2100-12-31" style="width:100%; padding:6px; border-radius:8px; border:1px solid #ccc;"/>
+  </div>
+</div>
+
+<button class="action" id="generateReportBtn" style="width:100%; margin-bottom:16px;">🔍 عرض التقرير</button>
+
+<div id="reportContent">
+  <!-- يتعبأ ديناميكياً -->
+</div>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js').then(() => {
+    console.log('Service Worker Registered');
+  });
+}
+</script>
+<script>
+    // إعداد Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAs1Qz1_8Bge6LvIZ61CsjQV4P8RSa8t4A",
+  authDomain: "santorini-chalet.firebaseapp.com",
+  projectId: "santorini-chalet",
+  storageBucket: "santorini-chalet.firebasestorage.app",
+  messagingSenderId: "280049242908",
+  appId: "1:280049242908:web:2e6e7d9d88506c764760d9",
+  measurementId: "G-D8THYXGFSN"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+// سعر الإفطار الثابت للسيفة (ر.ع لكل حجز)
+const BREAKFAST_PRICE = 8;
+
+// =====================================================
+// ============ بوابة الدخول + قفل البصمة ==============
+// =====================================================
+const OWNER_UID = "5CY9e4YqWbXB4KioxIM11uBSnIA3";
+const BIO_KEY   = "nuzulBioCredId";
+
+let __authResolve;
+window.__authReady = new Promise(r => { __authResolve = r; });
+
+(function () {
+  const auth = firebase.auth();
+
+  const gate = document.createElement('div');
+  gate.id = 'authGate';
+  gate.style.cssText =
+    'position:fixed; inset:0; z-index:100000; background:#00396f; color:#fff;' +
+    'display:flex; align-items:center; justify-content:center; direction:rtl;' +
+    'font-family:inherit; padding:20px;';
+  gate.innerHTML =
+    '<div style="width:100%; max-width:330px; text-align:center;">' +
+      '<div style="font-size:34px; font-weight:bold; margin-bottom:4px;">نُزُل</div>' +
+      '<div style="opacity:.75; font-size:13px; margin-bottom:22px;">إدارة العقارات</div>' +
+      '<div id="gateBusy" style="font-size:14px; opacity:.85;">جارٍ التحقق…</div>' +
+      '<div id="gateBio" style="display:none;">' +
+        '<button id="bioUnlock" style="width:100%; padding:14px; border:none; border-radius:12px;' +
+        'background:#fff; color:#00396f; font-size:16px; font-weight:bold; cursor:pointer;">👆 فتح بالبصمة</button>' +
+        '<div id="bioFallback" style="margin-top:14px; font-size:13px; opacity:.85; cursor:pointer; text-decoration:underline;">استخدم كلمة المرور</div>' +
+      '</div>' +
+      '<div id="gateForm" style="display:none; text-align:right;">' +
+        '<input id="gateEmail" type="email" inputmode="email" autocomplete="username" placeholder="البريد الإلكتروني" ' +
+        'style="width:100%; padding:12px; border:none; border-radius:10px; margin-bottom:10px; font-size:15px; direction:ltr; text-align:left;"/>' +
+        '<input id="gatePass" type="password" autocomplete="current-password" placeholder="كلمة المرور" ' +
+        'style="width:100%; padding:12px; border:none; border-radius:10px; margin-bottom:14px; font-size:15px; direction:ltr; text-align:left;"/>' +
+        '<button id="gateLogin" style="width:100%; padding:13px; border:none; border-radius:12px;' +
+        'background:#00b268; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">دخول</button>' +
+      '</div>' +
+      '<div id="gateMsg" style="margin-top:14px; font-size:13px; min-height:18px; color:#ffd9d9;"></div>' +
+    '</div>';
+
+  function mount() {
+    if (!document.body) { document.addEventListener('DOMContentLoaded', mount); return; }
+    if (!document.getElementById('authGate')) document.body.appendChild(gate);
+  }
+  mount();
+
+  const $ = id => document.getElementById(id);
+  const show = (busy, bio, form) => {
+    if ($('gateBusy')) $('gateBusy').style.display = busy ? 'block' : 'none';
+    if ($('gateBio'))  $('gateBio').style.display  = bio  ? 'block' : 'none';
+    if ($('gateForm')) $('gateForm').style.display = form ? 'block' : 'none';
+  };
+  const msg = t => { if ($('gateMsg')) $('gateMsg').textContent = t || ''; };
+
+  // ---------- أدوات WebAuthn ----------
+  const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)))
+                       .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const unb64 = str => {
+    const s2 = str.replace(/-/g,'+').replace(/_/g,'/');
+    const bin = atob(s2 + '='.repeat((4 - s2.length % 4) % 4));
+    return Uint8Array.from(bin, c => c.charCodeAt(0));
+  };
+  const rand = n => crypto.getRandomValues(new Uint8Array(n));
+
+  async function bioAvailable() {
+    try {
+      return !!(window.PublicKeyCredential &&
+        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
+    } catch (e) { return false; }
+  }
+
+  window.nuzulRegisterBiometric = async function () {
+    const user = auth.currentUser;
+    if (!user) { alert('سجّل الدخول أولاً.'); return false; }
+    if (!(await bioAvailable())) { alert('هذا الجهاز لا يدعم البصمة في المتصفح.'); return false; }
+    try {
+      const cred = await navigator.credentials.create({
+        publicKey: {
+          challenge: rand(32),
+          rp: { name: 'نُزُل' },
+          user: { id: Uint8Array.from(user.uid, c => c.charCodeAt(0)),
+                  name: user.email || 'owner', displayName: 'نُزُل' },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+          authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+          timeout: 60000,
+          attestation: 'none'
+        }
+      });
+      localStorage.setItem(BIO_KEY, b64(cred.rawId));
+      alert('تم تفعيل البصمة على هذا الجهاز.');
+      return true;
+    } catch (e) {
+      console.error('[bio register]', e);
+      alert('تعذّر تفعيل البصمة: ' + e.message);
+      return false;
+    }
+  };
+
+  window.nuzulDisableBiometric = function () {
+    localStorage.removeItem(BIO_KEY);
+    alert('تم إلغاء البصمة على هذا الجهاز.');
+  };
+
+  window.nuzulHasBiometric = () => !!localStorage.getItem(BIO_KEY);
+
+  async function bioVerify() {
+    const id = localStorage.getItem(BIO_KEY);
+    if (!id) return false;
+    await navigator.credentials.get({
+      publicKey: {
+        challenge: rand(32),
+        allowCredentials: [{ type: 'public-key', id: unb64(id) }],
+        userVerification: 'required',
+        timeout: 60000
+      }
+    });
+    return true;
+  }
+
+  // ---------- فتح التطبيق ----------
+  let unlocked = false;
+  function unlock() {
+    if (unlocked) return;
+    unlocked = true;
+    const g = document.getElementById('authGate');
+    if (g) g.remove();
+    __authResolve(true);
+  }
+
+  window.nuzulLock = function () {
+    location.reload();
+  };
+
+  window.nuzulSignOut = async function () {
+    localStorage.removeItem(BIO_KEY);
+    await auth.signOut();
+    location.reload();
+  };
+
+  async function afterSignedIn(user) {
+    if (user.uid !== OWNER_UID) {
+      msg('هذا الحساب غير مصرّح له.');
+      await auth.signOut();
+      show(false, false, true);
+      return;
+    }
+    if (window.nuzulHasBiometric()) {
+      show(false, true, false);
+      msg('');
+      const tryBio = async () => {
+        try { if (await bioVerify()) unlock(); }
+        catch (e) { msg('لم تُقبل البصمة. حاول مرة أخرى أو استخدم كلمة المرور.'); }
+      };
+      if ($('bioUnlock')) $('bioUnlock').onclick = tryBio;
+      if ($('bioFallback')) $('bioFallback').onclick = async () => { await window.nuzulSignOut(); };
+      tryBio();
+    } else {
+      unlock();
+      if (await bioAvailable()) {
+        setTimeout(() => {
+          if (confirm('تفعيل فتح التطبيق بالبصمة على هذا الجهاز؟')) window.nuzulRegisterBiometric();
+        }, 900);
+      }
+    }
+  }
+
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+
+  auth.onAuthStateChanged(user => {
+    if (user) { afterSignedIn(user); }
+    else { show(false, false, true); msg(''); }
+  });
+
+  document.addEventListener('click', async e => {
+    if (!e.target || e.target.id !== 'gateLogin') return;
+    const email = ($('gateEmail').value || '').trim();
+    const pass  = $('gatePass').value || '';
+    if (!email || !pass) { msg('أدخل البريد وكلمة المرور.'); return; }
+    e.target.disabled = true; msg('جارٍ الدخول…');
+    try {
+      await auth.signInWithEmailAndPassword(email, pass);
+      $('gatePass').value = '';
+    } catch (err) {
+      const m = String(err.code || err.message);
+      msg(m.includes('wrong-password') || m.includes('invalid-credential') ? 'البريد أو كلمة المرور غير صحيحة.'
+          : m.includes('too-many-requests') ? 'محاولات كثيرة. انتظر قليلاً.'
+          : 'تعذّر الدخول: ' + (err.message || m));
+    } finally { e.target.disabled = false; }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('gateForm') &&
+        document.getElementById('gateForm').style.display === 'block') {
+      const b = document.getElementById('gateLogin'); if (b) b.click();
+    }
+  });
+})();
+
+
+
+// تعريف العقار الحالي هنا أولاً ليكون متاحاً لكل الكود
+var currentProperty = localStorage.getItem('property') || 'chalet';
+console.log('✅ INDEX v3.0 loaded | currentProperty:', currentProperty);
+
+// calendarCol وexpensesDocId يستخدمان currentProperty - عرّفناها هنا مبكرًا
+// عشان تكون جاهزة قبل أي كود ثاني يستخدمها (حتى لو نفّذ بشكل متزامن عند تحميل الصفحة)
+function calendarCol(year) {
+  // ملاحظة: نحافظ على نفس أسماء المجموعات الحالية لتجنب كسر البيانات/الصلاحيات
+  if (currentProperty === 'chalet') return 'calendar2025';
+  if (currentProperty === 'salalah') return 'calendar2025_salalah';
+  return 'calendar2025_apartment';
+}
+function yearFromDateKey(dateKey) {
+  const y = parseInt(String(dateKey || '').split('-')[0], 10);
+  return Number.isFinite(y) ? y : new Date().getFullYear();
+}
+
+// ===== تحويل الأيام الفائتة من "عربون" إلى "محجوز" تلقائياً =====
+// يشمل كل الأيام السابقة (حتى من شهور ماضية)، وليس فقط الشهر الحالي
+async function autoConvertPeriodCollection(colName, todayKey) {
+  try {
+    const snapshot = await db.collection(colName)
+      .where(firebase.firestore.FieldPath.documentId(), '<', todayKey)
+      .get();
+
+    const docsToUpdate = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const updates = {};
+      ['morning', 'evening', 'fullDay', 'overnight'].forEach(period => {
+        if (data[period] && data[period].status === 'عربون') {
+          updates[`${period}.status`] = 'محجوز';
+        }
+      });
+      if (Object.keys(updates).length > 0) {
+        docsToUpdate.push({ ref: doc.ref, updates });
+      }
+    });
+
+    for (let i = 0; i < docsToUpdate.length; i += 400) {
+      const batch = db.batch();
+      docsToUpdate.slice(i, i + 400).forEach(({ ref, updates }) => batch.update(ref, updates));
+      await batch.commit();
+    }
+    if (docsToUpdate.length > 0) {
+      console.log(`✅ ${colName}: تم تحويل ${docsToUpdate.length} يوم من عربون إلى محجوز`);
+    }
+  } catch (e) {
+    console.error(`autoConvertPeriodCollection(${colName}) error:`, e);
+  }
+}
+
+async function autoConvertSalalahCollection(todayKey) {
+  try {
+    const snapshot = await db.collection('calendar2025_salalah').get();
+    const refsToUpdate = [];
+    snapshot.forEach(doc => {
+      const b = doc.data();
+      if (b.status === 'عربون' && b.checkout && b.checkout <= todayKey) {
+        refsToUpdate.push(doc.ref);
+      }
+    });
+
+    for (let i = 0; i < refsToUpdate.length; i += 400) {
+      const batch = db.batch();
+      refsToUpdate.slice(i, i + 400).forEach(ref => batch.update(ref, { status: 'محجوز' }));
+      await batch.commit();
+    }
+    if (refsToUpdate.length > 0) {
+      console.log(`✅ صلالة: تم تحويل ${refsToUpdate.length} حجز من عربون إلى محجوز`);
+    }
+  } catch (e) {
+    console.error('autoConvertSalalahCollection error:', e);
+  }
+}
+
+// يُنفَّذ عند فتح التطبيق: يفحص كل العقارات (سنتوريني، السيفة، صلالة)
+// ويحوّل أي يوم/حجز فات تاريخه وكان "عربون" إلى "محجوز"، بما فيها الأشهر الماضية
+async function autoConvertPastReservations() {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  await Promise.all([
+    autoConvertPeriodCollection('calendar2025', todayKey),
+    autoConvertPeriodCollection('calendar2025_apartment', todayKey),
+    autoConvertSalalahCollection(todayKey)
+  ]);
+}
+function expensesDocId(year, month) {
+  year = year || 2025;
+  month = String(month).padStart(2, '0');
+
+  if (currentProperty === 'chalet') return `expenses-${year}-${month}`;
+  if (currentProperty === 'salalah') return `expenses-${year}-${month}-salalah`;
+  return `expenses-${year}-${month}-apartment`;
+}
+// ===== تبديل شعار العقار =====
+const CHALET_LOGO = "https://i.ibb.co/271BVWXd/Santorini-Logo.png"; // شعار سنتوريني (سنتوريني)
+const APARTMENT_LOGO = "https://i.ibb.co/XxYxYMpC/Beige-and-Brown-Modern-Illustrative-Hotel-Resort-Logo.png"; // شعار السيفة
+const SALALAH_LOGO = "https://i.ibb.co/fY43Q2XX/file-00000000674c72469de776b67497c64b.png"; // شعار صلالة
+
+// تُعيد رابط الشعار حسب العقار الحالي
+function getLogoUrl() {
+  if (currentProperty === 'chalet') return CHALET_LOGO;
+  if (currentProperty === 'salalah') return SALALAH_LOGO;
+  return APARTMENT_LOGO;
+}
+
+// تُحدِّث كل الشعارات الظاهرة
+function updateLogos() {
+  const main = document.getElementById('mainLogo');
+  if (main) main.src = getLogoUrl();
+
+  const card = document.getElementById('cardLogo');
+  if (card) card.src = getLogoUrl();
+}
+
+// تحديث أولي عند تحميل الصفحة - يتأخر لضمان تحميل currentProperty أولاً
+window.addEventListener('load', updateLogos);
+
+
+async function loadMonthBookings(year, monthIndex, slideEl) {
+  const monthStr = String(monthIndex + 1).padStart(2, '0');
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+  const startKey = `${year}-${monthStr}-01`;
+  const endKey   = `${year}-${monthStr}-${String(daysInMonth).padStart(2, '0')}`;
+
+  try {
+    const snapshot = await db.collection(calendarCol(year))
+      .where(firebase.firestore.FieldPath.documentId(), ">=", startKey)
+      .where(firebase.firestore.FieldPath.documentId(), "<=", endKey)
+      .get();
+
+    snapshot.forEach(doc => {
+      const dayEl = slideEl.querySelector(`.day[data-date='${doc.id}']`);
+      if (dayEl) renderBookings(dayEl, doc.data());
+    });
+  } catch (e) {
+    console.error('Error loading month bookings:', e);
+  }
+}
+
+
+    // المتغيرات العالمية
+    let currentPeriod = null;
+    let currentDateKey = null;
+    let currentBookingData = null;
+    let currentExpenseDocId = null;
+    let expensesList = [];
+    let expenseTypes = ['كهرباء','ماء','رواتب','تنظيف','انترنت','صيانة','أخرى'];
+
+
+    // إظهار وإخفاء حقل العربون
+    function toggleDepositGroup(show) {
+      const group = document.getElementById('depositGroup');
+      group.style.display = show ? 'flex' : 'none';
+      if (!show) {
+        document.getElementById('deposit').value = '';
+        document.getElementById('remaining').textContent = '';
+      }
+    }
+
+    // تحديث المتبقي عند إدخال المبلغ والعربون
+    function updateRemaining() {
+      const amount = parseFloat(document.getElementById('amount').value) || 0;
+      const paidEl = document.getElementById('paidAmount');
+      const paid   = parseFloat(paidEl ? paidEl.value : 0) || 0;
+      const dep    = document.getElementById('deposit');
+      if (dep) dep.value = paid;               // توافق مع الحقول القديمة
+      const box = document.getElementById('remaining');
+      if (!box) return;
+      if (!amount) { box.textContent = ''; return; }
+      const rest = amount - paid;
+      if (rest > 0) {
+        box.style.color = '#c62828';
+        box.textContent = `المتبقي: ${rest.toFixed(2)} ر.ع` + (paid > 0 ? ` (مدفوع ${paid.toFixed(2)})` : '');
+      } else if (rest === 0) {
+        box.style.color = '#00794f';
+        box.textContent = '✅ مدفوع بالكامل';
+      } else {
+        box.style.color = '#c62828';
+        box.textContent = `⚠️ المدفوع أكبر من السعر بـ ${Math.abs(rest).toFixed(2)} ر.ع`;
+      }
+    }
+
+    // الحالة تُستنتج من الدفع بدل أن يختارها المستخدم
+    function deriveStatus(amount, paid) {
+      if (paid > 0 && paid < amount) return 'عربون';
+      return 'محجوز';
+    }
+
+    // المدفوع الفعلي لحجز مخزّن (يدعم البيانات القديمة)
+    function paidOf(b) {
+      if (!b) return 0;
+      if (b.paid !== undefined && b.paid !== null && b.paid !== '') return parseFloat(b.paid) || 0;
+      if (String(b.status || '').trim() === 'عربون') return parseFloat(b.deposit) || 0;
+      if (String(b.status || '').trim() === 'محجوز') return parseFloat(b.amount) || 0;
+      return 0;
+    }
+    window.paidOf = paidOf;
+
+    function syncPeriodButtons() {
+      const sel = document.getElementById('periodSelect');
+      if (!sel) return;
+      document.querySelectorAll('#periodBtns .period-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.period === sel.value);
+      });
+    }
+    window.syncPeriodButtons = syncPeriodButtons;
+
+    document.addEventListener('click', e => {
+      const btn = e.target && e.target.closest ? e.target.closest('.period-btn') : null;
+      if (!btn) return;
+      const sel = document.getElementById('periodSelect');
+      if (!sel || sel.disabled) return;
+      sel.value = btn.dataset.period;
+      sel.dispatchEvent(new Event('change'));
+      syncPeriodButtons();
+    });
+
+    const PLAT_COLOR = { booking: '#003580', airbnb: '#ff5a5f', masarrah: '#0a8f4d' };
+    function applySourceLock(b) {
+      const sel   = document.getElementById('bookingSource');
+      const lab   = document.getElementById('bookingSourceLabel');
+      const badge = document.getElementById('sourceLocked');
+      if (!sel || !badge) return;
+      const plat = b && b.icalPlatform;
+      if (plat) {
+        sel.style.display = 'none';
+        if (lab) lab.textContent = 'مصدر الحجز (مستورد — غير قابل للتعديل):';
+        badge.style.display = 'block';
+        badge.style.background = PLAT_COLOR[plat] || '#475569';
+        badge.textContent = '🔗 ' + (b.source || plat);
+      } else {
+        sel.style.display = '';
+        if (lab) lab.textContent = 'مصدر الحجز:';
+        badge.style.display = 'none';
+      }
+    }
+    window.applySourceLock = applySourceLock;
+
+    document.addEventListener('input', e => {
+      if (e.target && (e.target.id === 'amount' || e.target.id === 'paidAmount')) updateRemaining();
+    });
+    document.addEventListener('click', e => {
+      if (!e.target) return;
+      if (e.target.id === 'paidNone') {
+        document.getElementById('paidAmount').value = 0; updateRemaining();
+      }
+      if (e.target.id === 'paidFull') {
+        document.getElementById('paidAmount').value =
+          parseFloat(document.getElementById('amount').value) || 0;
+        updateRemaining();
+      }
+      if (e.target.id === 'deleteBooking') {
+        if (!confirm('حذف هذا الحجز نهائياً؟')) return;
+        document.getElementById('status').value = 'متاح';
+        const sb = document.getElementById('saveBooking');
+        if (sb) sb.click();
+      }
+    });
+
+    // تحديث عرض الحجوزات في اليوم
+    // ألوان المصادر — تُلوَّن بها خانة اليوم كاملة
+    const SRC_COLOR = {
+      booking:  { bg: '#003580', fg: '#ffffff', label: 'بوكينج' },
+      airbnb:   { bg: '#ff5a5f', fg: '#ffffff', label: 'ايربنب' },
+      masarrah: { bg: '#0a8f4d', fg: '#ffffff', label: 'مسرّة' },
+      investor: { bg: '#f2c200', fg: '#3a2c00', label: 'مستثمر' },
+      manual:   { bg: '#f2c200', fg: '#3a2c00', label: 'حجز داخلي' }
+    };
+
+    function platformKey(b) {
+      if (!b) return 'manual';
+      if (b.icalPlatform) return b.icalPlatform;
+      const src = String(b.source || '').replace(/[\u0617-\u061A\u064B-\u0652]/g, '').trim();
+      if (src.indexOf('بوكينج') !== -1 || src.toLowerCase().indexOf('booking') !== -1) return 'booking';
+      if (src.indexOf('ايربنب') !== -1 || src.indexOf('إيربنب') !== -1 || src.toLowerCase().indexOf('airbnb') !== -1) return 'airbnb';
+      if (src.indexOf('مسرة') !== -1 || src.toLowerCase().indexOf('masarrah') !== -1) return 'masarrah';
+      if (src.indexOf('مستثمر') !== -1) return 'investor';
+      return 'manual';
+    }
+    window.platformKey = platformKey;
+
+    function renderBookings(dayEl, data) {
+      dayEl.querySelectorAll('.booking-line').forEach(el => el.remove());
+      dayEl.querySelectorAll('.plat-dots').forEach(el => el.remove());
+      dayEl.querySelectorAll('.investor-mark').forEach(el => el.remove());
+      dayEl.classList.remove('is-booked');
+      dayEl.style.background = '';
+      dayEl.style.color = '';
+      dayEl.title = '';
+      if (!data) return;
+
+      const PERIOD_TEXT = { morning: 'صباح', evening: 'مساء', fullDay: 'كامل', overnight: 'مبيت' };
+      const active = [];
+      ['morning', 'evening', 'fullDay', 'overnight'].forEach(period => {
+        const b = data[period];
+        if (!b || !b.status || b.status.trim() === 'متاح') return;
+        active.push({ period, b, key: platformKey(b) });
+      });
+      if (!active.length) return;
+
+      // خلفية اليوم: لون واحد، أو شرائح متساوية إن تعددت المصادر
+      const keys = [...new Set(active.map(a => a.key))];
+      const colors = keys.map(k => (SRC_COLOR[k] || SRC_COLOR.manual));
+      if (colors.length === 1) {
+        dayEl.style.background = colors[0].bg;
+      } else {
+        const step = 100 / colors.length;
+        dayEl.style.background = 'linear-gradient(135deg,' +
+          colors.map((c, n) => `${c.bg} ${n * step}% ${(n + 1) * step}%`).join(',') + ')';
+      }
+      dayEl.style.color = colors[0].fg;
+      dayEl.classList.add('is-booked');
+      dayEl.title = keys.map(k => (SRC_COLOR[k] || SRC_COLOR.manual).label).join(' + ');
+
+      // المستثمر: نقطة سوداء صغيرة تميّزه عن حجز المالك بنفس اللون الأصفر
+      if (keys.indexOf('investor') !== -1) {
+        const mk = document.createElement('span');
+        mk.className = 'investor-mark';
+        dayEl.appendChild(mk);
+      }
+
+      // الفترات تُكتب في سنتوريني فقط — بقية العقارات يوم كامل دائماً
+      const showPeriods = (typeof currentProperty === 'undefined') || currentProperty === 'chalet';
+      if (!showPeriods) return;
+
+      active.forEach(a => {
+        const div = document.createElement('div');
+        div.className = 'booking-line';
+        div.style.color = (SRC_COLOR[a.key] || SRC_COLOR.manual).fg;
+        div.textContent = (a.period === 'morning' || a.period === 'evening')
+          ? (a.b.timePeriod ? a.b.timePeriod : PERIOD_TEXT[a.period])
+          : PERIOD_TEXT[a.period];
+        dayEl.appendChild(div);
+      });
+    }
+
+    // تحديث قائمة المصروفات في النافذة
+    function renderExpenses() {
+      const expenseListDiv = document.getElementById('expenseList');
+      expenseListDiv.innerHTML = '';
+      let total = 0;
+
+      expensesList.forEach(exp => {
+        total += parseFloat(exp.amount);
+        const div = document.createElement('div');
+        div.textContent = `${exp.type} : ${exp.amount} ر.ع`;
+        expenseListDiv.appendChild(div);
+      });
+
+      // المجموع النهائي
+      const totalDiv = document.createElement('div');
+      totalDiv.style.fontWeight = 'bold';
+      totalDiv.style.marginTop = '10px';
+      totalDiv.textContent = `المجموع: ${total.toFixed(2)} ر.ع`;
+      expenseListDiv.appendChild(totalDiv);
+    }
+
+    // حفظ المصروفات في فايرستور
+    function saveExpenses() {
+      if (!currentExpenseDocId) return;
+      db.collection("expenses").doc(currentExpenseDocId).set({ items: expensesList })
+        .then(() => renderExpenses())
+        .catch(e => alert('خطأ في حفظ المصروفات: ' + e.message));
+    }
+
+    // تحميل بيانات المصروفات ونوعياتها
+async function loadExpenses(year, month) {
+  currentExpenseDocId = expensesDocId(year, month);
+  expensesList = [];
+  document.getElementById('expenseList').innerHTML = '';
+  document.getElementById('expenseTypeInput').style.display = 'none';
+  document.getElementById('expenseTypeSelect').style.display = 'block';
+
+  showPopup('expensesPopup');
+  const allTypes = [...new Set([...expenseTypes])];
+
+  try {
+    const doc = await db.collection("expenses").doc(currentExpenseDocId).get();
+    if (doc.exists) {
+      expensesList = doc.data().items || [];
+      expensesList.forEach(exp => {
+        if (!allTypes.includes(exp.type)) allTypes.push(exp.type);
+      });
+    }
+  } catch(e) {
+    alert('خطأ في تحميل المصروفات: ' + e.message);
+  }
+
+  const select = document.getElementById('expenseTypeSelect');
+  select.innerHTML = '<option value="" disabled selected>اختر نوع المصروف</option>';
+  allTypes.forEach(type => {
+    const opt = document.createElement('option');
+    opt.value = type;
+    opt.textContent = type;
+    select.appendChild(opt);
+  });
+
+  renderExpenses();
+}
+
+
+
+    // حدث تغيير اختيار نوع المصروف (إظهار حقل إدخال جديد إذا اخترت "أخرى")
+    document.getElementById('expenseTypeSelect').addEventListener('change', (e) => {
+      if (e.target.value === 'أخرى') {
+        document.getElementById('expenseTypeInput').style.display = 'block';
+        document.getElementById('expenseTypeInput').value = '';
+        e.target.style.display = 'none';
+      }
+    });
+
+document.getElementById('saveExpense').addEventListener('click', () => {
+  let type = document.getElementById('expenseTypeSelect').value;
+  if (!type) {
+    type = document.getElementById('expenseTypeInput').value.trim();
+    if (!type) {
+      alert('يرجى إدخال نوع المصروف');
+      return;
+    }
+  } else if (type === 'أخرى') {
+    // خذ النص المدخل بدل "أخرى"
+    type = document.getElementById('expenseTypeInput').value.trim();
+    if (!type) {
+      alert('يرجى إدخال نوع المصروف');
+      return;
+    }
+  }
+  
+  const amount = parseFloat(document.getElementById('expenseAmount').value);
+  if (isNaN(amount) || amount <= 0) {
+    alert('يرجى إدخال مبلغ صالح');
+    return;
+  }
+
+  // تحديث أو إضافة المصروف
+  const existingIndex = expensesList.findIndex(exp => exp.type === type);
+  if (existingIndex !== -1) {
+    expensesList[existingIndex].amount += amount;
+  } else {
+    expensesList.push({ type, amount });
+  }
+
+  if (!expenseTypes.includes(type)) expenseTypes.push(type);
+
+  // تنظيف الحقول
+  document.getElementById('expenseAmount').value = '';
+  document.getElementById('expenseTypeInput').style.display = 'none';
+  document.getElementById('expenseTypeInput').value = '';
+  document.getElementById('expenseTypeSelect').style.display = 'block';
+  document.getElementById('expenseTypeSelect').value = '';
+
+  saveExpenses();
+});
+
+document.getElementById('deleteExpense').addEventListener('click', () => {
+  let type = document.getElementById('expenseTypeSelect').value;
+  
+  if (!type || type === 'أخرى') {
+    type = document.getElementById('expenseTypeInput').value.trim();
+    if (!type) {
+      alert('يرجى إدخال نوع المصروف');
+      return;
+    }
+  }
+
+  const amount = parseFloat(document.getElementById('expenseAmount').value);
+  if (isNaN(amount) || amount <= 0) {
+    alert('يرجى إدخال مبلغ صالح');
+    return;
+  }
+
+  const existingIndex = expensesList.findIndex(exp => exp.type === type);
+  if (existingIndex !== -1) {
+    expensesList[existingIndex].amount -= amount;
+    if (expensesList[existingIndex].amount <= 0) {
+      expensesList.splice(existingIndex, 1);
+      const typeStillExists = expensesList.some(exp => exp.type === type);
+      if (!typeStillExists) {
+        expenseTypes = expenseTypes.filter(t => t !== type);
+      }
+    }
+    saveExpenses();
+  } else {
+    alert('نوع المصروف غير موجود');
+  }
+
+  // تنظيف الحقول
+  document.getElementById('expenseAmount').value = '';
+  document.getElementById('expenseTypeInput').style.display = 'none';
+  document.getElementById('expenseTypeInput').value = '';
+  document.getElementById('expenseTypeSelect').style.display = 'block';
+  document.getElementById('expenseTypeSelect').value = '';
+});
+
+    function closePopup(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    // تحديث المتبقي عند إدخال المبلغ والعربون
+    document.getElementById('amount').addEventListener('input', updateRemaining);
+    document.getElementById('deposit').addEventListener('input', updateRemaining);
+
+    // عند تغيير نوع الحجز (عرض حقل العربون إذا عربون)
+    document.getElementById('status').addEventListener('change', (e) => {
+      toggleDepositGroup(e.target.value === 'عربون');
+      if (e.target.value === 'متاح') {
+        document.getElementById('amount').value = '';
+        document.getElementById('deposit').value = '';
+        document.getElementById('remaining').textContent = '';
+        document.getElementById('guestName').value = '';
+        document.getElementById('guestPhone').value = '';
+        document.getElementById('notes').value = '';
+      }
+    });
+
+    // عرض/إخفاء حقل الفترة الزمنية عند اختيار الفترة
+    const periodSelect = document.getElementById('periodSelect');
+    const timePeriodInput = document.getElementById('timePeriod');
+    const timePeriodLabel = document.getElementById('timePeriodLabel');
+
+    periodSelect.addEventListener('change', (e) => {
+  if (typeof currentProperty !== 'undefined' && currentProperty === 'apartment') { e.target.value = 'fullDay'; currentPeriod = 'fullDay'; }
+      currentPeriod = e.target.value;
+
+      if (!currentPeriod) {
+        clearBookingFields();
+        return;
+      }
+
+      const periodData = (currentBookingData && currentBookingData[currentPeriod]) ? currentBookingData[currentPeriod] : null;
+
+      if (!periodData) {
+        clearBookingFields(false);
+      } else {
+        document.getElementById('status').value = periodData.status || '';
+        document.getElementById('amount').value = periodData.amount || '';
+        const pEl = document.getElementById('paidAmount');
+        if (pEl) pEl.value = paidOf(periodData) || '';
+        updateRemaining();
+        document.getElementById('guestCount').value = periodData.guestCount || '';
+        document.getElementById('guestName').value = periodData.guestName || '';
+        document.getElementById('guestPhone').value = periodData.guestPhone || '';
+        document.getElementById('notes').value = periodData.notes || '';
+const srcSel = document.getElementById('bookingSource');
+if (srcSel) srcSel.value = (periodData.source || '');
+applySourceLock(periodData);
+const bfChk = document.getElementById('breakfastCheck');
+if (bfChk) bfChk.checked = !!periodData.breakfast;
+
+      }
+
+      if (currentPeriod === 'morning' || currentPeriod === 'evening') {
+        timePeriodInput.value = periodData ? (periodData.timePeriod || '') : '';
+        timePeriodInput.style.display = 'block';
+        timePeriodLabel.style.display = 'block';
+      } else {
+        timePeriodInput.value = '';
+        timePeriodInput.style.display = 'none';
+        timePeriodLabel.style.display = 'none';
+      }
+
+      toggleDepositGroup(periodData && periodData.status === 'عربون');
+
+      const hasBooking = !!(periodData && (periodData.status === 'محجوز' || periodData.status === 'عربون'));
+      document.getElementById('showBookingCard').style.display = hasBooking ? 'block' : 'none';
+      const delBtn = document.getElementById('deleteBooking');
+      if (delBtn) delBtn.style.display = hasBooking ? 'block' : 'none';
+    });
+
+    function clearBookingFields(clearAll = true) {
+      if (clearAll) {
+        document.getElementById('status').value = '';
+        document.getElementById('amount').value = '';
+        const pEl2 = document.getElementById('paidAmount');
+        if (pEl2) pEl2.value = '';
+        document.getElementById('deposit').value = '';
+        document.getElementById('remaining').textContent = '';
+        applySourceLock(null);
+        document.getElementById('guestCount').value = '';
+        document.getElementById('guestName').value = '';
+        document.getElementById('guestPhone').value = '';
+        document.getElementById('notes').value = '';
+        const srcSel = document.getElementById('bookingSource');
+if (srcSel) srcSel.value = '';
+        const bfChk = document.getElementById('breakfastCheck');
+if (bfChk) bfChk.checked = false;
+
+      }
+      timePeriodInput.value = '';
+      timePeriodInput.style.display = (currentPeriod === 'morning' || currentPeriod === 'evening') ? 'block' : 'none';
+      timePeriodLabel.style.display = (currentPeriod === 'morning' || currentPeriod === 'evening') ? 'block' : 'none';
+      toggleDepositGroup(false);
+      document.getElementById('showBookingCard').style.display = 'none';
+    }
+
+    // عند الضغط على يوم في التقويم لفتح نافذة الحجز
+    document.addEventListener('click', (e) => {
+      const dayEl = e.target.classList.contains('day') ? e.target : e.target.closest('.day');
+      if (!dayEl) return;
+
+      const pickedKey = dayEl.getAttribute('data-date');
+      if (!pickedKey) return;
+
+      // صلالة: افتح popup خاص بها
+      if (currentProperty === 'salalah') {
+        window.openSalalahPopup(pickedKey, false);
+        return;
+      }
+
+      currentDateKey = pickedKey;
+      currentBookingData = null;
+      currentPeriod = null;
+
+      const bfGroup = document.getElementById('breakfastGroup');
+      if (bfGroup) bfGroup.style.display = (currentProperty === 'apartment') ? 'block' : 'none';
+
+      // الفترات تختلف بين العقارات — أعد تطبيقها في كل فتح
+      try { if (typeof applyPropertyBookingMode === 'function') applyPropertyBookingMode(); } catch (e) {}
+
+      showPopup('bookingPopup');
+      document.getElementById('bookingPopup').setAttribute('data-date', currentDateKey);
+
+      periodSelect.value = '';
+      if (typeof syncPeriodButtons === 'function') syncPeriodButtons();
+      clearBookingFields();
+
+      
+  // ضمان يوم كامل للسيفة وإخفاء عناصر الفترة
+  try {
+    if (typeof currentProperty !== 'undefined' && currentProperty === 'apartment') {
+      const periodSelect = document.getElementById('periodSelect');
+      const periodLabel = document.querySelector('label[for="periodSelect"]');
+      const timePeriodInput = document.getElementById('timePeriod');
+      const timePeriodLabel = document.getElementById('timePeriodLabel');
+      if (periodSelect) {
+        periodSelect.value = 'fullDay';
+        periodSelect.disabled = true;
+        currentPeriod = 'fullDay';
+      }
+      if (periodLabel) periodLabel.style.display = 'none';
+      if (timePeriodInput) timePeriodInput.style.display = 'none';
+      if (timePeriodLabel) timePeriodLabel.style.display = 'none';
+    } else {
+      const periodSelect = document.getElementById('periodSelect');
+      const periodLabel = document.querySelector('label[for="periodSelect"]');
+      if (periodSelect) periodSelect.disabled = false;
+      if (periodLabel) periodLabel.style.display = '';
+    }
+  } catch(e) {}
+// تحميل بيانات الحجز لليوم من Firebase
+db.collection(calendarCol(yearFromDateKey(currentDateKey))).doc(currentDateKey).get().then(doc => {
+  currentBookingData = doc.exists ? doc.data() : {};
+
+  // 👈 للشقة: ثبّت يوم كامل ثم فعّل change ليتم تعبئة الحقول فورًا
+  if (currentProperty === 'apartment') {
+    const ps = document.getElementById('periodSelect');
+    currentPeriod = 'fullDay';
+    if (ps) {
+      ps.value = 'fullDay';
+      ps.disabled = true;
+      ps.dispatchEvent(new Event('change')); // 🔔 هذا هو المفتاح
+    }
+  }
+});
+
+    });
+
+    // حفظ بيانات الحجز في Firestore
+document.getElementById('saveBooking').addEventListener('click', async () => {
+  if (typeof currentProperty !== 'undefined' && currentProperty === 'apartment') { currentPeriod = 'fullDay'; const ps=document.getElementById('periodSelect'); if (ps) ps.value='fullDay'; }
+  if (typeof syncPeriodButtons === 'function') syncPeriodButtons();
+  if (!currentDateKey) {
+    alert('يرجى اختيار اليوم!');
+    return;
+  }
+  if (!currentPeriod) {
+    alert('يرجى اختيار الفترة!');
+    return;
+  }
+
+  let status = document.getElementById('status').value;
+  if (!status) {
+    alert('يرجى اختيار نوع الحجز!');
+    return;
+  }
+
+  if (status === 'متاح') {
+    const confirmDelete = confirm('هل أنت متأكد من حذف الحجز لهذه الفترة؟');
+    if (!confirmDelete) return;
+
+    try {
+      const docRef = db.collection(calendarCol(yearFromDateKey(currentDateKey))).doc(currentDateKey);
+      // احذف الفترة المحددة
+      await docRef.update({ [currentPeriod]: firebase.firestore.FieldValue.delete() });
+      toast('تم حذف الحجز بنجاح', 'success');
+      // إعادة تحميل بيانات اليوم لعرض الحجوزات المتبقية
+      const dayEl = document.querySelector(`.day[data-date='${currentDateKey}']`);
+      const updatedDoc = await docRef.get();
+      const newData = updatedDoc.exists ? updatedDoc.data() : {};
+      if (dayEl) renderBookings(dayEl, newData);
+      // إخفاء بطاقة الحجز
+      document.getElementById('showBookingCard').style.display = 'none';
+      currentBookingData = newData;
+      closePopup('bookingPopup');
+    } catch (e) {
+      toast('حدث خطأ أثناء حذف الحجز', 'error');
+      console.error(e);
+    }
+    return;
+
+    try {
+      const docRef = db.collection(calendarCol(yearFromDateKey(currentDateKey))).doc(currentDateKey);
+
+      await docRef.update({
+        [currentPeriod]: firebase.firestore.FieldValue.delete()
+      });
+
+      alert('تم حذف الحجز بنجاح');
+      currentBookingData = null;
+
+      const dayEl = document.querySelector(`.day[data-date='${currentDateKey}']`);
+      if (dayEl) renderBookings(dayEl, {});
+
+      document.getElementById('showBookingCard').style.display = 'none';
+      closePopup('bookingPopup');
+    } catch (e) {
+      alert('حدث خطأ أثناء حذف الحجز');
+      console.error(e);
+    }
+    return;
+  }
+
+  // باقي حفظ الحجز العادي
+  const amount = parseFloat(document.getElementById('amount').value) || 0;
+  const paidEl = document.getElementById('paidAmount');
+  const paid   = Math.max(0, parseFloat(paidEl ? paidEl.value : 0) || 0);
+
+  if (amount <= 0) { alert('يرجى إدخال السعر الكامل!'); return; }
+  if (paid > amount && !confirm('المدفوع أكبر من السعر. حفظ على أي حال؟')) return;
+
+  // الحالة تُستنتج من الدفع، ولم تعد يختارها المستخدم
+  status = deriveStatus(amount, paid);
+
+  const bfChkEl = document.getElementById('breakfastCheck');
+  const breakfastOn = (currentProperty === 'apartment' && bfChkEl && bfChkEl.checked);
+
+  const existingPeriod = (currentBookingData && currentBookingData[currentPeriod]) || {};
+
+  const periodData = {
+  status,
+  amount,
+  paid,
+  deposit: paid,
+  // الحجز المستورد يحتفظ بهويته مهما عُدِّل يدوياً
+  icalPlatform: existingPeriod.icalPlatform || null,
+  icalUid: existingPeriod.icalUid || null,
+  external: !!existingPeriod.icalPlatform,
+  guestName: document.getElementById('guestName').value.trim(),
+  guestPhone: document.getElementById('guestPhone').value.trim(),
+  guestCount: parseInt(document.getElementById('guestCount').value) || 0,
+  notes: document.getElementById('notes').value.trim(),
+  timePeriod: (currentPeriod === 'morning' || currentPeriod === 'evening') ? timePeriodInput.value.trim() : '',
+  source: existingPeriod.icalPlatform
+            ? (existingPeriod.source || '')
+            : (document.getElementById('bookingSource') ? document.getElementById('bookingSource').value : ''),
+  breakfast: breakfastOn,
+  breakfastAmount: breakfastOn ? BREAKFAST_PRICE : 0
+};
+
+
+  const updatedData = {...(currentBookingData || {})};
+  updatedData[currentPeriod] = periodData;
+
+  try {
+    await db.collection(calendarCol(yearFromDateKey(currentDateKey))).doc(currentDateKey).set(updatedData);
+const reservationLink = `https://santorinichalet.github.io/santorini-calendar/reservation.html?id=${currentDateKey}`;
+
+const copyBtn = document.getElementById('copyReservationLink');
+copyBtn.style.display = 'block';
+
+copyBtn.onclick = () => {
+  navigator.clipboard.writeText(reservationLink).then(() => {
+    copyBtn.textContent = '✅ تم نسخ رابط الحجز بنجاح';
+    setTimeout(() => {
+      copyBtn.innerHTML = '📋 نسخ رابط الحجز';
+    }, 3000);
+  });
+};
+
+    alert('تم حفظ البيانات بنجاح');
+    currentBookingData = updatedData;
+    scheduleThankYou(updatedData);
+    const dayEl = document.querySelector(`.day[data-date='${currentDateKey}']`);
+    if (dayEl) renderBookings(dayEl, currentBookingData);
+
+    document.getElementById('showBookingCard').style.display = 'block';
+  } catch (e) {
+    alert('حدث خطأ أثناء الحفظ');
+    console.error(e);
+  }
+});
+
+
+    // عرض بطاقة الحجز
+    function showBookingCard() {
+      if (!currentPeriod || !currentBookingData || !currentBookingData[currentPeriod]) return;
+
+      const data = currentBookingData[currentPeriod];
+      const cardContent = document.getElementById('bookingCardContent');
+      const periodNames = {morning: 'صباح', evening: 'مساء', fullDay: 'يوم كامل', overnight: 'مبيت'};
+
+      const [yy, mm, dd] = currentDateKey.split('-');
+      const dateStr = `${dd}/${mm}/${yy}`;
+      const weekdays = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+      const weekdayName = weekdays[new Date(currentDateKey).getDay()];
+
+      // اسم العقار
+      const propNames = { chalet: '🏖 سنتوريني', apartment: '🏢 السيفة', salalah: '🌴 صلالة' };
+      const propColors = { chalet: 'linear-gradient(135deg,#00527a,#0088cc)', apartment: 'linear-gradient(135deg,#1a5276,#2980b9)', salalah: 'linear-gradient(135deg,#145a32,#27ae60)' };
+      const statusColor = data.status === 'محجوز' ? '#004d99' : '#e6a800';
+
+      document.getElementById('cardHeader').style.background = propColors[currentProperty] || propColors.chalet;
+      document.getElementById('cardLogo').src = getLogoUrl();
+      document.getElementById('cardPropertyName').textContent = propNames[currentProperty] || '';
+      document.getElementById('cardStatus').textContent = data.status;
+      document.getElementById('cardStatus').style.background = statusColor;
+
+      const remaining = data.status === 'عربون' ? (parseFloat(data.amount) - parseFloat(data.deposit || 0)) : 0;
+
+      cardContent.innerHTML = `
+        <div class="card-highlight">${dateStr} — ${weekdayName}</div>
+        ${(currentProperty === 'chalet') ? `<div class="card-row"><span class="label">الفترة</span><span class="value">${periodNames[currentPeriod] || ''}</span></div>` : ''}
+        <div class="card-row"><span class="label">السعر الإجمالي</span><span class="value">${data.amount} ر.ع</span></div>
+        ${data.status === 'عربون' ? `
+        <div class="card-row"><span class="label">العربون المدفوع</span><span class="value" style="color:#e6a800;">${data.deposit} ر.ع</span></div>
+        <div class="card-row"><span class="label">المتبقي</span><span class="value" style="color:#c0392b;">${remaining} ر.ع</span></div>
+        ` : ''}
+        <div class="card-row"><span class="label">عدد الضيوف</span><span class="value">${data.guestCount || '—'}</span></div>
+        <div class="card-row"><span class="label">اسم الضيف</span><span class="value">${data.guestName || '—'}</span></div>
+        <div class="card-row"><span class="label">رقم الهاتف</span><span class="value">${data.guestPhone || '—'}</span></div>
+        ${data.notes ? `<div class="card-row"><span class="label">ملاحظات</span><span class="value">${data.notes}</span></div>` : ''}
+      `;
+
+      showPopup('bookingCardPopup');
+    }
+
+    // زر عرض بطاقة الحجز
+    document.getElementById('showBookingCard').addEventListener('click', showBookingCard);
+
+    // تهيئة swiper للأشهر
+// تهيئة التقويم في كل مرة (حسب العقار المختار)
+let swiper = null;
+
+let calendarStartYear = 2025;
+let calendarEndYear = Math.max(new Date().getFullYear() + 1, 2026); // سنة قادمة على الأقل
+let currentViewYear = new Date().getFullYear();
+let currentViewMonth = new Date().getMonth() + 1; // 1-12
+let isRebuildingCalendar = false;
+
+function totalMonthsCount() {
+  return (calendarEndYear - calendarStartYear + 1) * 12;
+}
+
+function getSlideIndexForYearMonth(year, monthIndex) {
+  return (year - calendarStartYear) * 12 + monthIndex;
+}
+
+function getSlideIndexForDate(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = dateObj.getMonth(); // 0-11
+  const totalMonths = totalMonthsCount();
+  const idx = getSlideIndexForYearMonth(y, m);
+  return Math.min(Math.max(idx, 0), totalMonths - 1);
+}
+function buildCalendar(focusYear, focusMonthIndex) {
+  const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const weekdays = ['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
+
+  const today = new Date();
+
+  // افتراضيًا: اذهب إلى اليوم
+  if (typeof focusYear !== 'number' || typeof focusMonthIndex !== 'number') {
+    focusYear = today.getFullYear();
+    focusMonthIndex = today.getMonth(); // 0-11
+  }
+
+  // تأكد أن سنة التركيز ضمن النطاق
+  if (focusYear < calendarStartYear) calendarStartYear = focusYear;
+  if (focusYear > calendarEndYear) calendarEndYear = focusYear;
+
+  const totalMonths = totalMonthsCount();
+  const initialIndex = Math.min(Math.max(getSlideIndexForYearMonth(focusYear, focusMonthIndex), 0), totalMonths - 1);
+
+  // تحديث شهر/سنة العرض الحالي
+  currentViewYear = focusYear;
+  currentViewMonth = focusMonthIndex + 1;
+
+  const monthsContainer = document.getElementById('monthsContainer');
+  monthsContainer.innerHTML = '';
+
+  for (let idx = 0; idx < totalMonths; idx++) {
+    const year = calendarStartYear + Math.floor(idx / 12);
+    const monthIndex = idx % 12; // 0-11
+    const monthStr = String(monthIndex + 1).padStart(2, '0');
+
+    const slide = document.createElement('div');
+    slide.className = 'swiper-slide';
+    slide.setAttribute('data-year', String(year));
+    slide.setAttribute('data-month', String(monthIndex + 1));
+
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const firstDay = new Date(year, monthIndex, 1).getDay(); // 0=الأحد
+
+    let calendarGrid = '';
+    for (let i = 0; i < firstDay; i++) {
+      calendarGrid += `<div class="day empty"></div>`;
+    }
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const isToday = (year === today.getFullYear() && monthIndex === today.getMonth() && i === today.getDate());
+      const dateKey = `${year}-${monthStr}-${String(i).padStart(2,'0')}`;
+      calendarGrid += `
+        <div class="day${isToday ? ' today' : ''}" data-date="${dateKey}">
+          <div class="day-number">${i}</div>
+        </div>
+      `;
+    }
+
+    slide.innerHTML = `
+      <div class="month-title">${monthNames[monthIndex]} ${year}</div>
+      <div class="weekday-row">${weekdays.map(w => `<div>${w}</div>`).join('')}</div>
+      <div class="calendar-grid">${calendarGrid}</div>
+    `;
+
+    monthsContainer.appendChild(slide);
+
+    // تحميل حجوزات هذا الشهر دفعة واحدة
+    loadMonthBookings(year, monthIndex, slide);
+  }
+
+  // إعادة تهيئة swiper
+  isRebuildingCalendar = true;
+  if (swiper && swiper.destroy) {
+    swiper.destroy(true, true);
+  }
+
+  swiper = new Swiper('.swiper', {
+    slidesPerView: 'auto',
+    centeredSlides: true,
+    spaceBetween: 0,
+    loop: false,
+    effect: 'slide',
+    rtl: true,
+    initialSlide: initialIndex,
+    observer: true,
+    observeParents: true,
+  });
+
+  // حدث تغيير الشريحة: حدّث السنة/الشهر، ووسّع النطاق تلقائيًا
+  swiper.on('slideChange', () => {
+    if (!swiper) return;
+    const active = swiper.slides[swiper.activeIndex];
+    if (!active) return;
+
+    const y = parseInt(active.getAttribute('data-year'), 10);
+    const m = parseInt(active.getAttribute('data-month'), 10);
+    if (Number.isFinite(y)) currentViewYear = y;
+    if (Number.isFinite(m)) currentViewMonth = m;
+
+    if (isRebuildingCalendar) return;
+
+    const total = totalMonthsCount();
+
+    // إذا اقتربت من النهاية: أضف سنة جديدة للأمام
+    if (swiper.activeIndex >= total - 2) {
+      calendarEndYear += 1;
+      buildCalendar(currentViewYear, currentViewMonth - 1);
+      return;
+    }
+
+    // إذا اقتربت من البداية: أضف سنة قبلها
+    if (swiper.activeIndex <= 1) {
+      calendarStartYear -= 1;
+      buildCalendar(currentViewYear, currentViewMonth - 1);
+      return;
+    }
+
+    // تحديث صلالة عند تغيير الشهر
+    if (currentProperty === 'salalah') setTimeout(renderSalalahCalendar, 200);
+  });
+
+  swiper.update();
+  swiper.slideTo(initialIndex, 0);
+  requestAnimationFrame(() => {
+    if (swiper) {
+      swiper.update();
+      swiper.slideTo(initialIndex, 0);
+    }
+    isRebuildingCalendar = false;
+  });
+}
+// زر "اليوم"
+    document.getElementById('goToToday').addEventListener('click', () => {
+      const today = new Date();
+      buildCalendar(today.getFullYear(), today.getMonth());
+    });
+
+// ===== التقرير المقارن =====
+document.getElementById('generateReportBtn').addEventListener('click', async () => {
+  const fromDateStr = document.getElementById('reportFromDate').value;
+  const toDateStr   = document.getElementById('reportToDate').value;
+  const reportDiv   = document.getElementById('reportContent');
+
+  if (!fromDateStr || !toDateStr) { alert('يرجى اختيار تاريخي البداية والنهاية.'); return; }
+  if (fromDateStr > toDateStr)    { alert('تاريخ "من" يجب أن يكون قبل أو يساوي تاريخ "إلى".'); return; }
+
+  reportDiv.innerHTML = '<p style="text-align:center;color:#888;">⏳ جاري تحميل البيانات...</p>';
+
+  const fromDate  = new Date(fromDateStr);
+  const toDate    = new Date(toDateStr);
+  const oneDayMs  = 86400000;
+  const totalDays = Math.round((toDate - fromDate) / oneDayMs) + 1;
+  const months    = getMonthsBetween(fromDate, toDate);
+
+  // ---- دالة مصروفات شهر ----
+  async function fetchExpenses(propKey) {
+    let total = 0;
+    for (const m of months) {
+      let docId;
+      if (propKey === 'chalet')    docId = `expenses-${m.year}-${m.month}`;
+      else if (propKey === 'apartment') docId = `expenses-${m.year}-${m.month}-apartment`;
+      else docId = `expenses-${m.year}-${m.month}-salalah`;
+      try {
+        const d = await db.collection('expenses').doc(docId).get();
+        if (d.exists) total += (d.data().items||[]).reduce((s,i)=>s+(parseFloat(i.amount)||0),0);
+      } catch(e){}
+    }
+    return total;
+  }
+
+  // ---- دالة تقرير يوم بيوم (سنتوريني / السيفة) ----
+  async function fetchDailyProp(collection) {
+    let booked=0, depositDays=0, income=0, breakfast=0, collected=0;
+    for (let i=0; i<totalDays; i++) {
+      const d = new Date(fromDate.getTime() + i*oneDayMs);
+      const key = d.toISOString().slice(0,10);
+      try {
+        const doc = await db.collection(collection).doc(key).get();
+        if (!doc.exists) continue;
+        const data = doc.data();
+        ['morning','evening','fullDay','overnight'].forEach(p => {
+          if (!data[p]?.status) return;
+          if (data[p].status==='محجوز')  { booked++; income += parseFloat(data[p].amount)||0; }
+          if (data[p].status==='عربون')  { depositDays++; income += parseFloat(data[p].amount)||0; }
+          if (data[p].status==='محجوز' || data[p].status==='عربون') collected += paidOf(data[p]);
+          if (data[p].breakfast) breakfast += parseFloat(data[p].breakfastAmount) || 0;
+        });
+      } catch(e){}
+    }
+    return { booked, depositDays, income, breakfast, collected };
+  }
+
+  // ---- دالة تقرير صلالة ----
+  async function fetchSalalah() {
+    let booked=0, depositDays=0, income=0, collected=0;
+    try {
+      const snap = await db.collection('calendar2025_salalah').get();
+      snap.forEach(doc => {
+        const b = doc.data();
+        if (!b.checkin||!b.checkout) return;
+        if (b.checkout<=fromDateStr||b.checkin>toDateStr) return;
+        const nights = Math.round((new Date(b.checkout)-new Date(b.checkin))/oneDayMs);
+        if (b.status==='محجوز')  { booked+=nights; income+=parseFloat(b.amount)||0; }
+        if (b.status==='عربون')  { depositDays+=nights; income+=parseFloat(b.amount)||0; }
+        if (b.status==='محجوز' || b.status==='عربون') collected += paidOf(b);
+      });
+    } catch(e){}
+    return { booked, depositDays, income, collected };
+  }
+
+  // ---- دالة بيانات شهرية للرسم البياني ----
+  async function fetchMonthlyIncome(propKey, collection, isSalalah) {
+    const result = {};
+    for (const m of months) {
+      const label = `${m.year}-${m.month}`;
+      let inc = 0;
+      if (isSalalah) {
+        try {
+          const snap = await db.collection('calendar2025_salalah').get();
+          snap.forEach(doc => {
+            const b = doc.data();
+            if (!b.checkin) return;
+            if (b.checkin.startsWith(label)) inc += parseFloat(b.amount)||parseFloat(b.deposit)||0;
+          });
+        } catch(e){}
+      } else {
+        const daysInMonth = new Date(parseInt(m.year), parseInt(m.month), 0).getDate();
+        for (let d=1; d<=daysInMonth; d++) {
+          const key = `${m.year}-${m.month}-${String(d).padStart(2,'0')}`;
+          if (key < fromDateStr || key > toDateStr) continue;
+          try {
+            const doc = await db.collection(collection).doc(key).get();
+            if (!doc.exists) continue;
+            const data = doc.data();
+            ['morning','evening','fullDay','overnight'].forEach(p => {
+              if (!data[p]?.status) return;
+              if (data[p].status==='محجوز') inc += parseFloat(data[p].amount)||0;
+              if (data[p].status==='عربون') inc += parseFloat(data[p].deposit)||0;
+            });
+          } catch(e){}
+        }
+      }
+      result[label] = (result[label]||0) + inc;
+    }
+    return result;
+  }
+
+  try {
+    // جلب البيانات بالتوازي
+    const [chaletData, aptData, salalahData,
+           chaletExp, aptExp, salalahExp,
+           chaletMonthly, aptMonthly, salalahMonthly] = await Promise.all([
+      fetchDailyProp('calendar2025'),
+      fetchDailyProp('calendar2025_apartment'),
+      fetchSalalah(),
+      fetchExpenses('chalet'),
+      fetchExpenses('apartment'),
+      fetchExpenses('salalah'),
+      fetchMonthlyIncome('chalet','calendar2025',false),
+      fetchMonthlyIncome('apartment','calendar2025_apartment',false),
+      fetchMonthlyIncome('salalah','calendar2025_salalah',true),
+    ]);
+
+    // ---- بناء بطاقة عقار ----
+    function propCard(name, emoji, color, data, expenses, totalDays, unit) {
+      const occupied  = data.booked + data.depositDays;
+      const occPct    = totalDays > 0 ? Math.round(occupied/totalDays*100) : 0;
+      const bfIncome  = data.breakfast || 0;
+      const net       = data.income + bfIncome - expenses;
+      const occColor  = occPct >= 70 ? '#27ae60' : occPct >= 40 ? '#f39c12' : '#e74c3c';
+      return `
+        <div class="report-prop-card" style="border-top:3px solid ${color};">
+          <div class="report-prop-header">
+            <span class="report-prop-name">${emoji} ${name}</span>
+            <span class="report-occupancy" style="background:${occColor};">${occPct}% إشغال</span>
+          </div>
+          <div class="report-occ-bar"><div class="report-occ-fill" style="width:${occPct}%;background:${occColor};"></div></div>
+          <div style="font-size:11px;color:#999;margin-bottom:8px;">${occupied} ${unit} محجوزة من أصل ${totalDays}</div>
+          <div class="report-row"><span class="rl">الدخل</span><span class="rv" style="color:#27ae60;">${data.income.toFixed(2)} ر.ع</span></div>
+          ${bfIncome > 0 ? `<div class="report-row"><span class="rl">🍳 دخل الإفطار</span><span class="rv" style="color:#e08e00;">${bfIncome.toFixed(2)} ر.ع</span></div>` : ''}
+          <div class="report-row"><span class="rl">المحصّل</span><span class="rv" style="color:#27ae60;">${(data.collected||0).toFixed(2)} ر.ع</span></div>
+          ${(data.income - (data.collected||0)) > 0.001 ? `<div class="report-row"><span class="rl">المستحق على الضيوف</span><span class="rv" style="color:#e08e00;">${(data.income - (data.collected||0)).toFixed(2)} ر.ع</span></div>` : ''}
+          <div class="report-row"><span class="rl">المصروفات</span><span class="rv" style="color:#e74c3c;">${expenses.toFixed(2)} ر.ع</span></div>
+          <div class="report-row"><span class="rl">صافي الربح</span><span class="rv" style="color:${net>=0?'#004d99':'#e74c3c'};">${net.toFixed(2)} ر.ع</span></div>
+        </div>`;
+    }
+
+    const totalIncome   = chaletData.income + aptData.income + salalahData.income;
+    const totalBreakfast = (chaletData.breakfast||0) + (aptData.breakfast||0) + (salalahData.breakfast||0);
+    const totalExpenses = chaletExp + aptExp + salalahExp;
+    const totalNet      = totalIncome + totalBreakfast - totalExpenses;
+
+    // ---- رسم بياني شهري ----
+    const chartLabels = months.map(m => {
+      const names = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+      return names[parseInt(m.month)-1];
+    });
+    const chartDataChalet  = months.map(m => chaletMonthly[`${m.year}-${m.month}`]||0);
+    const chartDataApt     = months.map(m => aptMonthly[`${m.year}-${m.month}`]||0);
+    const chartDataSalalah = months.map(m => salalahMonthly[`${m.year}-${m.month}`]||0);
+
+    reportDiv.innerHTML = `
+      ${propCard('سنتوريني','🏖','#004d99', chaletData,  chaletExp,  totalDays, 'يوم')}
+      ${propCard('السيفة',  '🏢','#0077cc', aptData,     aptExp,     totalDays, 'يوم')}
+      ${propCard('صلالة',   '🌴','#27ae60', salalahData, salalahExp, totalDays, 'ليلة')}
+      <div class="report-total-box">
+        <h4>📊 الإجمالي الكلي</h4>
+        <div class="report-row"><span class="rl">إجمالي الدخل</span><span class="rv" style="color:#27ae60;">${totalIncome.toFixed(2)} ر.ع</span></div>
+        ${totalBreakfast > 0 ? `<div class="report-row"><span class="rl">🍳 إجمالي دخل الإفطار</span><span class="rv" style="color:#e08e00;">${totalBreakfast.toFixed(2)} ر.ع</span></div>` : ''}
+        <div class="report-row"><span class="rl">إجمالي المصروفات</span><span class="rv" style="color:#e74c3c;">${totalExpenses.toFixed(2)} ر.ع</span></div>
+        <div class="report-row"><span class="rl">صافي الأرباح الكلي</span><span class="rv" style="color:${totalNet>=0?'#004d99':'#e74c3c'};font-size:15px;">${totalNet.toFixed(2)} ر.ع</span></div>
+      </div>
+      <div class="chart-wrap">
+        <h4>📈 الدخل الشهري لكل عقار</h4>
+        <canvas id="incomeChart" height="180"></canvas>
+      </div>
+    `;
+
+    // رسم الـ chart
+    setTimeout(() => {
+      const ctx = document.getElementById('incomeChart')?.getContext('2d');
+      if (!ctx) return;
+      if (window._reportChart) window._reportChart.destroy();
+      window._reportChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartLabels,
+          datasets: [
+            { label: '🏖 سنتوريني', data: chartDataChalet,  backgroundColor: '#004d99' },
+            { label: '🏢 السيفة',   data: chartDataApt,     backgroundColor: '#0099cc' },
+            { label: '🌴 صلالة',    data: chartDataSalalah, backgroundColor: '#27ae60' },
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { font: { size: 10 } } },
+            y: { ticks: { font: { size: 10 } }, beginAtZero: true }
+          }
+        }
+      });
+    }, 100);
+
+  } catch(err) {
+    reportDiv.innerHTML = `<p style="color:red;">خطأ: ${err.message}</p>`;
+  }
+});
+
+
+    function getMonthsBetween(start, end) {
+      const months = [];
+      let current = new Date(start.getFullYear(), start.getMonth(), 1);
+      const last = new Date(end.getFullYear(), end.getMonth(), 1);
+      while (current <= last) {
+        months.push({ year: current.getFullYear(), month: String(current.getMonth() + 1).padStart(2, '0') });
+        current.setMonth(current.getMonth() + 1);
+      }
+      return months;
+    }
+
+function toast(message, type = 'info') {
+  const div = document.createElement('div');
+  div.textContent = message;
+  div.style.position = 'fixed';
+  div.style.bottom = '20px';
+  div.style.right = '20px';
+  div.style.background = type === 'success' ? '#28a745' : (type === 'error' ? '#dc3545' : '#007bff');
+  div.style.color = 'white';
+  div.style.padding = '10px 20px';
+  div.style.borderRadius = '8px';
+  div.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+  div.style.zIndex = 9999;
+  document.body.appendChild(div);
+
+  setTimeout(() => {
+    div.remove();
+  }, 3000);
+}
+function scheduleThankYou(booking) {
+  const now = new Date();
+  const bookingDate = new Date(currentDateKey);
+  let exitDate = new Date(bookingDate);
+
+  const period = currentPeriod;
+  if (!period || !booking[period]) return;
+
+  if (period === 'morning' || period === 'evening') {
+    const timeRange = booking[period].timePeriod || '08:00-14:00';
+    const endTime = timeRange.split('-')[1].trim();
+    const [endHour, endMinute] = endTime.split(':');
+    exitDate.setHours(+endHour, +endMinute, 0, 0);
+  } else if (period === 'fullDay') {
+    exitDate.setHours(22, 0, 0, 0); // 10 مساء
+  } else if (period === 'overnight') {
+    exitDate.setDate(exitDate.getDate() + 1);
+    exitDate.setHours(9, 0, 0, 0); // اليوم التالي 9 صباح
+  }
+
+  const msUntilExit = exitDate - now;
+
+  if (msUntilExit <= 0) {
+    showThankYou(booking[period].guestName);
+  } else {
+    setTimeout(() => {
+      showThankYou(booking[period].guestName);
+    }, msUntilExit);
+  }
+}
+
+function showThankYou(guestName) {
+  const modal = document.createElement('div');
+  modal.style.position = 'fixed';
+  modal.style.top = '0';
+  modal.style.left = '0';
+  modal.style.width = '100%';
+  modal.style.height = '100%';
+  modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+  modal.style.display = 'flex';
+  modal.style.justifyContent = 'center';
+  modal.style.alignItems = 'center';
+  modal.style.zIndex = '10000';
+
+  modal.innerHTML = `
+    <div style="
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 350px;
+      text-align: center;
+      font-family: 'Tajawal', sans-serif;
+      color: #333;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    ">
+            <img src="${getLogoUrl()}" alt="شعار" style="
+        width: 100px;
+        display: block;
+        margin: 0 auto 10px;
+      ">
+      <h3 style="color:#007bff;">شكرًا ${guestName}!</h3>
+      <p>شكرًا لك على زيارتك.<br>
+      سيتم التأكد من مرفقات سنتوريني وتحويل مبلغ التأمين حسب الرقم الذي زودتنا به.</p>
+      <button onclick="this.parentElement.parentElement.remove()" style="
+        margin-top: 10px;
+        padding: 8px 16px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      ">إغلاق</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js';document.head.appendChild(s);"></script>
+<script>
+
+async function openDashboard() {
+  const content = document.getElementById('dashboardContent');
+
+  content.innerHTML = `<p>جاري تحميل البيانات...</p>`;
+  showPopup('dashboardPopup');
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  const todayKey = `${year}-${month}-${day}`;
+  const startMonthKey = `${year}-${month}-01`;
+  const endMonthDay = new Date(year, today.getMonth() + 1, 0).getDate();
+  const endMonthKey = `${year}-${month}-${String(endMonthDay).padStart(2, '0')}`;
+
+  let todayCount = 0, monthCount = 0, monthIncome = 0;
+
+  const todayDoc = await db.collection(calendarCol(year)).doc(todayKey).get();
+if (todayDoc.exists) {
+  const data = todayDoc.data();
+    Object.values(data).forEach(period => {
+      if (period.status && period.status !== 'متاح') todayCount++;
+    });
+  }
+
+  const snapshot = await db.collection(calendarCol(year))
+    .where(firebase.firestore.FieldPath.documentId(), ">=", startMonthKey)
+    .where(firebase.firestore.FieldPath.documentId(), "<=", endMonthKey)
+    .get();
+
+snapshot.forEach(doc => {
+    const data = doc.data();
+    Object.values(data).forEach(period => {
+      if (period.status && period.status !== 'متاح') {
+        monthCount++;
+        monthIncome += Number(period.amount) || 0;
+      }
+    });
+});
+
+
+  const totalDays = endMonthDay * 4;
+  const occupancyRate = ((monthCount / totalDays) * 100).toFixed(1);
+
+  content.innerHTML = `
+    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
+      <div style="flex:1; min-width:120px; background:#e6f0ff; padding:10px; border-radius:10px;">
+        📅 <div>حجوزات اليوم</div><strong>${todayCount}</strong>
+      </div>
+      <div style="flex:1; min-width:120px; background:#e6f0ff; padding:10px; border-radius:10px;">
+        📆 <div>حجوزات هذا الشهر</div><strong>${monthCount}</strong>
+      </div>
+      <div style="flex:1; min-width:120px; background:#e6f0ff; padding:10px; border-radius:10px;">
+        💰 <div>الدخل الشهري</div><strong>${monthIncome} ر.ع</strong>
+      </div>
+      <div style="flex:1; min-width:120px; background:#e6f0ff; padding:10px; border-radius:10px;">
+        🏖️ <div>نسبة الإشغال</div><strong>${occupancyRate}%</strong>
+      </div>
+    </div>
+
+    <canvas id="myChart" style="max-width:500px;margin:auto;"></canvas>
+  `;
+
+  setTimeout(() => {
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+        datasets: [{
+          label: 'الدخل الشهري (ر.ع)',
+          data: [500, 700, 800, 600, 750, 950, 1100, 900, 800, 950, 1000, 1200],
+          backgroundColor: '#007bff'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true }},
+        plugins: { legend: { display: false }}
+      }
+    });
+  }, 100);
+}
+function showNotification(message) {
+  const notif = document.getElementById('notifications');
+  notif.textContent = message;
+  notif.style.display = 'block';
+  setTimeout(() => {
+    notif.style.display = 'none';
+  }, 5000);
+}
+
+function createReservation(name, date, time, location) {
+  const id = Date.now().toString();
+
+  db.collection("reservations").doc(id).set({
+    name: name,
+    date: date,
+    time: time,
+    location: location
+  })
+  .then(() => {
+    const link = `https://santorinichalet.github.io/santorini-calendar/reservation.html?id=${id}`;
+    console.log("🔗 رابط الحجز:", link);
+    alert(`✅ تم الحجز!\nرابط الحجز: ${link}`);
+    navigator.clipboard.writeText(link).then(() => {
+      console.log("📋 تم نسخ الرابط إلى الحافظة.");
+    });
+  })
+  .catch(error => {
+    console.error("❌ خطأ في إنشاء الحجز:", error);
+  });
+}
+function closeAllPopups() {
+  document.querySelectorAll('.popup').forEach(p => p.style.display = 'none');
+}
+
+function showPopup(id) {
+  closeAllPopups();
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.error(`❌ لا يوجد عنصر بالمعرف: ${id}`);
+      return;
+    }
+    el.style.display = 'block';
+  }, 100);
+}
+
+function openExpenses(year, month) {
+  closeAllPopups();
+  loadExpenses(year, month).catch(e => {
+    console.error('💰 خطأ في تحميل المصروفات', e);
+    alert('حدث خطأ أثناء تحميل المصروفات');
+  });
+}
+
+function generateReport() {
+  closeAllPopups();
+
+  // افتراضيًا: تقرير الشهر المعروض حاليًا
+  try {
+    const y = currentViewYear || new Date().getFullYear();
+    const m = currentViewMonth || (new Date().getMonth() + 1);
+
+    const from = `${y}-${String(m).padStart(2,'0')}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    const to = `${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+
+    const fromEl = document.getElementById('reportFromDate');
+    const toEl = document.getElementById('reportToDate');
+    if (fromEl) fromEl.value = from;
+    if (toEl) toEl.value = to;
+  } catch(e) {}
+
+  showPopup('reportPopup');
+  setTimeout(() => {
+    const btn = document.getElementById('generateReportBtn');
+    if (btn) btn.click();
+    else console.warn('generateReportBtn not found');
+  }, 200);
+}
+</script>
+
+<script>
+function highlightPropertyButton() {
+  document.querySelectorAll('.property-switch .prop-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  const btns = document.querySelectorAll('.property-switch .prop-btn');
+  if (currentProperty === 'chalet' && btns[0]) btns[0].classList.add('active');
+  else if (currentProperty === 'apartment' && btns[1]) btns[1].classList.add('active');
+  else if (currentProperty === 'salalah' && btns[2]) btns[2].classList.add('active');
+}
+
+
+// تبديل وضع الحجز حسب العقار
+function applyPropertyBookingMode() {
+  const periodSelect = document.getElementById('periodSelect');
+  const periodLabel = document.querySelector('label[for="periodSelect"]');
+  const timePeriodInput = document.getElementById('timePeriod');
+  const timePeriodLabel = document.getElementById('timePeriodLabel');
+
+  if (!periodSelect) return;
+
+  const periodBtns = document.getElementById('periodBtns');
+
+  if (typeof currentProperty !== 'undefined' && currentProperty === 'apartment') {
+    // السيفة: يوم كامل فقط — لا داعي لعرض أي اختيار
+    periodSelect.value = 'fullDay';
+    periodSelect.disabled = true;
+    if (periodBtns) periodBtns.style.display = 'none';
+    if (periodLabel) periodLabel.style.display = 'none';
+    if (timePeriodInput) timePeriodInput.style.display = 'none';
+    if (timePeriodLabel) timePeriodLabel.style.display = 'none';
+    try { currentPeriod = 'fullDay'; } catch(e) {}
+  } else {
+    // سنتوريني: كل الفترات متاحة
+    periodSelect.disabled = false;
+    if (periodBtns) periodBtns.style.display = 'grid';
+    if (periodLabel) periodLabel.style.display = '';
+    if (typeof syncPeriodButtons === 'function') syncPeriodButtons();
+    // أظهر حقول الوقت حسب اختيار الفترة
+    if (timePeriodInput && timePeriodLabel) {
+      const show = (periodSelect.value === 'morning' || periodSelect.value === 'evening');
+      timePeriodInput.style.display = show ? 'block' : 'none';
+      timePeriodLabel.style.display = show ? 'block' : 'none';
+    }
+  }
+}
+
+function switchProperty(type) {
+  if (type === currentProperty) return;
+  currentProperty = type;
+  localStorage.setItem('property', currentProperty);
+  highlightPropertyButton();
+  if (typeof buildCalendar === 'function') {
+    buildCalendar(currentViewYear, currentViewMonth - 1);
+    updateLogos();
+    if (type === 'salalah') setTimeout(renderSalalahCalendar, 400);
+  }
+}
+
+// Ensure property buttons reflect stored property on load
+document.addEventListener('DOMContentLoaded', async () => {
+  try { await window.__authReady; } catch(e) {}
+  try{applyPropertyBookingMode();}catch(e){}
+  highlightPropertyButton();
+  updateLogos();
+  try { await autoConvertPastReservations(); } catch(e) { console.error('autoConvertPastReservations failed:', e); }
+  buildCalendar(currentViewYear, currentViewMonth - 1);
+  if (currentProperty === 'salalah') setTimeout(renderSalalahCalendar, 500);
+});
+
+</script>
+
+<script>
+// =============================================
+// ======= منطق حجوزات صلالة (من/إلى) =========
+// =============================================
+
+let salalahCurrentBookingId = null; // معرّف الحجز المفتوح للتعديل
+
+// فتح popup صلالة عند النقر على يوم
+window.openSalalahPopup = function(dateKey, forceEdit) {
+  console.log('🌴 openSalalahPopup called:', dateKey, 'forceEdit:', forceEdit);
+  // حدد تاريخ الدخول بالتاريخ المضغوط
+  document.getElementById('salalahCheckin').value = dateKey;
+  document.getElementById('salalahCheckout').value = '';
+  window.__salalahEditing = null;
+  const _si = document.getElementById('salalahStayInfo'); if (_si) _si.textContent = '';
+  document.getElementById('salalahStatus').value = '';
+  document.getElementById('salalahAmount').value = '';
+  document.getElementById('salalahPaid').value = '';
+  document.getElementById('salalahDeposit').value = '';
+  document.getElementById('salalahRemaining').textContent = '';
+  document.getElementById('salalahDepositGroup').style.display = 'none';
+  const _ss = document.getElementById('salalahSource'); if (_ss) _ss.value = '';
+  applySalalahSourceLock(null);
+  const _sd = document.getElementById('deleteSalalahBooking'); if (_sd) _sd.style.display = 'none';
+  
+  document.getElementById('salalahGuestCount').value = '';
+  document.getElementById('salalahGuestName').value = '';
+  document.getElementById('salalahGuestPhone').value = '';
+  document.getElementById('salalahNotes').value = '';
+  salalahCurrentBookingId = null;
+
+  // أظهر الـ popup فوراً
+  document.querySelectorAll('.popup').forEach(p => p.style.display = 'none');
+  document.getElementById('salalahPopup').style.display = 'block';
+  document.getElementById('showSalalahCard').style.display = 'none';
+
+  // هل هذا اليوم ضمن حجز موجود؟ ابحث عنه وعبّي البيانات
+  db.collection('calendar2025_salalah').get().then(snapshot => {
+    snapshot.forEach(doc => {
+      const b = doc.data();
+      // إذا forceEdit: ابحث في كل النطاق بما فيه checkout
+      // إذا لا: لا تفتح إذا كان اليوم هو checkout فقط (اتركه للحجز الجديد)
+      const inRange = forceEdit
+        ? (b.checkin && b.checkout && dateKey >= b.checkin && dateKey <= b.checkout)
+        : (b.checkin && b.checkout && dateKey >= b.checkin && dateKey < b.checkout);
+      if (inRange) {
+        // عبّي البيانات للتعديل
+        salalahCurrentBookingId = doc.id;
+        document.getElementById('salalahCheckin').value = b.checkin;
+        document.getElementById('salalahCheckout').value = b.checkout;
+        document.getElementById('salalahStatus').value = b.status || '';
+        document.getElementById('salalahAmount').value = b.amount || '';
+        document.getElementById('salalahPaid').value = paidOf(b) || '';
+        document.getElementById('salalahDeposit').value = b.deposit || '';
+        const _ss2 = document.getElementById('salalahSource');
+        if (_ss2) _ss2.value = b.source || '';
+        applySalalahSourceLock(b);
+        window.__salalahEditing = b;
+        updateSalalahStayInfo();
+        const _sd2 = document.getElementById('deleteSalalahBooking');
+        if (_sd2) _sd2.style.display = 'block';
+        
+        document.getElementById('salalahGuestCount').value = b.guestCount || '';
+        document.getElementById('salalahGuestName').value = b.guestName || '';
+        document.getElementById('salalahGuestPhone').value = b.guestPhone || '';
+        document.getElementById('salalahNotes').value = b.notes || '';
+        toggleSalalahDeposit(b.status === 'عربون');
+        updateSalalahRemaining();
+        document.getElementById('showSalalahCard').style.display = 'block';
+      }
+    });
+  }).catch(e => console.error('salalah load error', e));
+}
+
+function toggleSalalahDeposit(show) {
+  document.getElementById('salalahDepositGroup').style.display = show ? 'block' : 'none';
+  if (!show) {
+    document.getElementById('salalahDeposit').value = '';
+    document.getElementById('salalahRemaining').textContent = '';
+  }
+}
+
+function applySalalahSourceLock(b) {
+  const sel = document.getElementById('salalahSource');
+  const lab = document.getElementById('salalahSourceLabel');
+  const badge = document.getElementById('salalahSourceLocked');
+  if (!sel || !badge) return;
+  const COLORS = { booking: '#003580', airbnb: '#ff5a5f', masarrah: '#0a8f4d' };
+  const plat = b && b.icalPlatform;
+  if (plat) {
+    sel.style.display = 'none';
+    if (lab) lab.textContent = 'مصدر الحجز (مستورد — غير قابل للتعديل):';
+    badge.style.display = 'block';
+    badge.style.background = COLORS[plat] || '#475569';
+    badge.textContent = '🔗 ' + (b.source || plat);
+  } else {
+    sel.style.display = '';
+    if (lab) lab.textContent = 'مصدر الحجز:';
+    badge.style.display = 'none';
+  }
+}
+
+// يعرض التاريخ بصيغة واضحة وعدد الليالي، لأن حقل التاريخ يعرض صيغة نظام الجهاز
+function updateSalalahStayInfo() {
+  const box = document.getElementById('salalahStayInfo');
+  if (!box) return;
+  const ci = document.getElementById('salalahCheckin').value;
+  const co = document.getElementById('salalahCheckout').value;
+  if (!ci || !co) { box.textContent = ''; return; }
+  if (co <= ci) {
+    box.style.color = '#c62828';
+    box.textContent = '⚠️ تاريخ الخروج يجب أن يكون بعد الدخول';
+    return;
+  }
+  const nights = Math.round(
+    (new Date(co + 'T00:00:00Z') - new Date(ci + 'T00:00:00Z')) / 86400000
+  );
+  const word = nights === 1 ? 'ليلة واحدة'
+             : nights === 2 ? 'ليلتان'
+             : nights <= 10 ? nights + ' ليالٍ'
+             : nights + ' ليلة';
+  box.style.color = '#00794f';
+  box.textContent = `من ${ci} إلى ${co} — ${word}`;
+}
+
+function updateSalalahRemaining() {
+  const amount = parseFloat(document.getElementById('salalahAmount').value) || 0;
+  const paidEl = document.getElementById('salalahPaid');
+  const deposit = Math.max(0, parseFloat(paidEl ? paidEl.value : 0) || 0);
+  const depHidden = document.getElementById('salalahDeposit');
+  if (depHidden) depHidden.value = deposit;
+  const rem = amount - deposit;
+  const box = document.getElementById('salalahRemaining');
+  if (!amount) { box.textContent = ''; return; }
+  if (rem > 0) { box.style.color = '#c62828';
+    box.textContent = `المتبقي: ${rem.toFixed(2)} ر.ع` + (deposit > 0 ? ` (مدفوع ${deposit.toFixed(2)})` : ''); }
+  else if (rem === 0) { box.style.color = '#00794f'; box.textContent = '✅ مدفوع بالكامل'; }
+  else { box.style.color = '#c62828'; box.textContent = `⚠️ المدفوع أكبر من السعر بـ ${Math.abs(rem).toFixed(2)} ر.ع`; }
+}
+
+document.getElementById('salalahStatus').addEventListener('change', e => {
+  toggleSalalahDeposit(e.target.value === 'عربون');
+});
+document.getElementById('salalahAmount').addEventListener('input', updateSalalahRemaining);
+document.getElementById('salalahPaid').addEventListener('input', updateSalalahRemaining);
+document.getElementById('salalahCheckout').addEventListener('change', updateSalalahStayInfo);
+document.getElementById('salalahCheckout').addEventListener('input', updateSalalahStayInfo);
+document.getElementById('salalahPaidNone').addEventListener('click', () => {
+  document.getElementById('salalahPaid').value = 0; updateSalalahRemaining();
+});
+document.getElementById('salalahPaidFull').addEventListener('click', () => {
+  document.getElementById('salalahPaid').value =
+    parseFloat(document.getElementById('salalahAmount').value) || 0;
+  updateSalalahRemaining();
+});
+document.getElementById('deleteSalalahBooking').addEventListener('click', () => {
+  if (!confirm('حذف هذا الحجز نهائياً؟')) return;
+  document.getElementById('salalahStatus').value = 'متاح';
+  document.getElementById('saveSalalahBooking').click();
+});
+
+// حفظ حجز صلالة
+document.getElementById('saveSalalahBooking').addEventListener('click', async () => {
+  const checkin  = document.getElementById('salalahCheckin').value;
+  const checkout = document.getElementById('salalahCheckout').value;
+  let status     = document.getElementById('salalahStatus').value;
+
+  if (!checkin || !checkout) { alert('يرجى تحديد تاريخ الدخول والخروج'); return; }
+  if (checkin >= checkout)   { alert('تاريخ الخروج يجب أن يكون بعد تاريخ الدخول'); return; }
+
+  if (status === 'متاح') {
+    if (!salalahCurrentBookingId) { alert('لا يوجد حجز لحذفه'); return; }
+    if (!confirm('هل أنت متأكد من حذف هذا الحجز؟')) return;
+    await db.collection('calendar2025_salalah').doc(salalahCurrentBookingId).delete();
+    toast('تم حذف الحجز بنجاح', 'success');
+    salalahCurrentBookingId = null;
+    await renderSalalahCalendar();
+    document.getElementById('salalahPopup').style.display = 'none';
+    return;
+  }
+
+  const amount = parseFloat(document.getElementById('salalahAmount').value) || 0;
+  const paid   = Math.max(0, parseFloat(document.getElementById('salalahPaid').value) || 0);
+  if (amount <= 0) { alert('يرجى إدخال السعر الكامل'); return; }
+  if (paid > amount && !confirm('المدفوع أكبر من السعر. حفظ على أي حال؟')) return;
+
+  status = (paid > 0 && paid < amount) ? 'عربون' : 'محجوز';
+
+  const prev = window.__salalahEditing || {};
+
+  const data = {
+    checkin,
+    checkout,
+    status,
+    amount,
+    paid,
+    deposit: paid,
+    source: prev.icalPlatform
+              ? (prev.source || '')
+              : (document.getElementById('salalahSource').value || ''),
+    icalPlatform: prev.icalPlatform || null,
+    icalUid: prev.icalUid || null,
+    external: !!prev.icalPlatform,
+    guestCount: parseInt(document.getElementById('salalahGuestCount').value) || 0,
+    guestName: document.getElementById('salalahGuestName').value.trim(),
+    guestPhone: document.getElementById('salalahGuestPhone').value.trim(),
+    notes: document.getElementById('salalahNotes').value.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    if (salalahCurrentBookingId) {
+      await db.collection('calendar2025_salalah').doc(salalahCurrentBookingId).set(data);
+    } else {
+      const ref = await db.collection('calendar2025_salalah').add(data);
+      salalahCurrentBookingId = ref.id;
+    }
+    toast('تم حفظ الحجز بنجاح ✅', 'success');
+    document.getElementById('showSalalahCard').style.display = 'block';
+    await renderSalalahCalendar();
+    document.getElementById('salalahPopup').style.display = 'none';
+  } catch(e) {
+    toast('خطأ في الحفظ: ' + e.message, 'error');
+  }
+});
+
+// رسم الأيام المحجوزة في التقويم لصلالة
+async function renderSalalahCalendar() {
+  document.querySelectorAll('.day').forEach(d => {
+    d.classList.remove('salalah-booked','salalah-checkin','salalah-checkout','salalah-deposit','salalah-split');
+    d.querySelectorAll('.salalah-night-label,.salalah-src-badge,.salalah-split-inner').forEach(el => el.remove());
+  });
+
+  if (currentProperty !== 'salalah') return;
+
+  try {
+    const snapshot = await db.collection('calendar2025_salalah').get();
+    snapshot.forEach(doc => {
+      const b = doc.data();
+      if (!b.checkin || !b.checkout) return;
+
+      const isDeposit = b.status === 'عربون';
+      const nights = Math.round((new Date(b.checkout) - new Date(b.checkin)) / 86400000);
+      const colorClass = isDeposit ? 'salalah-deposit' : 'salalah-booked';
+
+      // لوّن كل الأيام من الدخول حتى قبل الخروج (الخروج يبقى بدون لون)
+      let cur = new Date(b.checkin);
+      const end = new Date(b.checkout);
+      let isFirst = true;
+
+      while (cur < end) {
+        const k = cur.toISOString().slice(0,10);
+        const dayEl = document.querySelector(`.day[data-date='${k}']`);
+        if (dayEl) {
+          dayEl.classList.add(colorClass);
+          // عدد الليالي على أول يوم فقط
+          if (isFirst) {
+            const lbl = document.createElement('div');
+            lbl.className = 'salalah-night-label';
+            lbl.textContent = `${nights}🌙`;
+            dayEl.appendChild(lbl);
+            isFirst = false;
+          }
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+  } catch(e) { console.error('salalah render error', e); }
+}
+
+// بطاقة حجز صلالة
+document.getElementById('showSalalahCard').addEventListener('click', () => {
+  if (!salalahCurrentBookingId) return;
+  db.collection('calendar2025_salalah').doc(salalahCurrentBookingId).get().then(doc => {
+    if (!doc.exists) return;
+    const b = doc.data();
+    const nights = Math.round((new Date(b.checkout) - new Date(b.checkin)) / 86400000);
+    const [cy,cm,cd] = b.checkin.split('-');
+    const [oy,om,od] = b.checkout.split('-');
+    const remaining = b.status === 'عربون' ? (parseFloat(b.amount||0) - parseFloat(b.deposit||0)) : 0;
+
+    document.getElementById('cardHeader').style.background = 'linear-gradient(135deg,#145a32,#27ae60)';
+    document.getElementById('cardLogo').src = SALALAH_LOGO;
+    document.getElementById('cardPropertyName').textContent = '🌴 صلالة';
+    document.getElementById('cardStatus').textContent = b.status;
+    document.getElementById('cardStatus').style.background = b.status === 'محجوز' ? '#004d99' : '#e6a800';
+
+    document.getElementById('bookingCardContent').innerHTML = `
+      <div class="card-highlight">${nights} ليلة 🌙</div>
+      <div class="card-row"><span class="label">تاريخ الدخول</span><span class="value">${cd}/${cm}/${cy}</span></div>
+      <div class="card-row"><span class="label">تاريخ الخروج</span><span class="value">${od}/${om}/${oy}</span></div>
+      <div class="card-row"><span class="label">السعر الإجمالي</span><span class="value">${b.amount} ر.ع</span></div>
+      ${b.status === 'عربون' ? `
+      <div class="card-row"><span class="label">العربون المدفوع</span><span class="value" style="color:#e6a800;">${b.deposit} ر.ع</span></div>
+      <div class="card-row"><span class="label">المتبقي</span><span class="value" style="color:#c0392b;">${remaining} ر.ع</span></div>
+      ` : ''}
+      <div class="card-row"><span class="label">عدد الضيوف</span><span class="value">${b.guestCount || '—'}</span></div>
+      <div class="card-row"><span class="label">اسم الضيف</span><span class="value">${b.guestName || '—'}</span></div>
+      <div class="card-row"><span class="label">رقم الهاتف</span><span class="value">${b.guestPhone || '—'}</span></div>
+      ${b.notes ? `<div class="card-row"><span class="label">ملاحظات</span><span class="value">${b.notes}</span></div>` : ''}
+    `;
+    closeAllPopups();
+    document.getElementById('bookingCardPopup').style.display = 'block';
+  });
+});
+
+// =============================================
+
+// مشاركة بطاقة الحجز
+function shareBookingCard() {
+  const prop = document.getElementById('cardPropertyName').textContent;
+  const status = document.getElementById('cardStatus').textContent;
+  const rows = document.querySelectorAll('#bookingCardContent .card-row');
+  const highlight = document.querySelector('#bookingCardContent .card-highlight');
+  let text = `🏨 بطاقة حجز\n`;
+  text += `العقار: ${prop}\n`;
+  text += `الحالة: ${status}\n`;
+  if (highlight) text += `${highlight.textContent.trim()}\n`;
+  rows.forEach(row => {
+    const label = row.querySelector('.label')?.textContent || '';
+    const value = row.querySelector('.value')?.textContent || '';
+    if (label && value) text += `${label}: ${value}\n`;
+  });
+  if (navigator.share) {
+    navigator.share({ text });
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+    toast('تم نسخ البطاقة ✅', 'success');
+  }
+}
+
+</script>
+<!-- ===================================================================
+     لوحة مزامنة iCal — الصق هذا الجزء كاملاً قبل </body> مباشرة
+     في ملف index.html. يعتمد على المتغيرين db و currentProperty
+     الموجودين أصلاً في التطبيق.
+     ⚠️ غيّر FUNCTIONS_BASE بعد نشر الدوال.
+     =================================================================== -->
+
+<style>
+  #icalFab{
+    display:none;
+    position:fixed; bottom:18px; left:18px; z-index:9998;
+    width:52px; height:52px; border-radius:50%; border:none;
+    background:#004d99; color:#fff; font-size:22px; cursor:pointer;
+    box-shadow:0 4px 14px rgba(0,0,0,.28);
+  }
+  #icalFab:focus-visible{ outline:3px solid #ffb000; outline-offset:2px; }
+  #icalPanel{
+    position:fixed; inset:0; z-index:9999; display:none;
+    background:rgba(0,0,0,.45); overflow-y:auto; padding:16px;
+  }
+  #icalPanel .sheet{
+    max-width:520px; margin:24px auto; background:#fff; border-radius:18px;
+    padding:18px; direction:rtl; text-align:right; font-family:inherit;
+  }
+  #icalPanel h3{ margin:0 0 4px; color:#00366e; }
+  #icalPanel .sub{ font-size:12px; color:#6b7a90; margin-bottom:14px; }
+  #icalPanel .plat{ border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-bottom:12px; }
+  #icalPanel .plat h4{ margin:0 0 8px; font-size:15px; display:flex; align-items:center; gap:8px; }
+  #icalPanel .swatch{ width:12px; height:12px; border-radius:3px; display:inline-block; }
+  #icalPanel label{ display:block; font-size:12px; color:#44566c; margin:8px 0 3px; }
+  #icalPanel input[type=text]{
+    width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:8px;
+    font-size:12px; direction:ltr; text-align:left; background:#fff;
+  }
+  #icalPanel input[readonly]{ background:#f1f5f9; color:#334155; }
+  #icalPanel .row{ display:flex; gap:8px; align-items:center; margin-top:6px; }
+  #icalPanel button.mini{
+    border:none; background:#004d99; color:#fff; border-radius:8px;
+    padding:7px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
+  }
+  #icalPanel button.mini.ghost{ background:#e2e8f0; color:#1e293b; }
+  #icalPanel .status{ font-size:11px; color:#64748b; margin-top:6px; }
+  #icalPanel .status.err{ color:#c62828; }
+  #icalPanel .actions{ display:flex; gap:8px; margin-top:6px; }
+  #icalPanel .actions button{
+    flex:1; border:none; border-radius:10px; padding:11px; font-size:14px;
+    cursor:pointer; color:#fff;
+  }
+  #icalSave{ background:#00794f; }
+  #icalSyncBtn{ background:#004d99; }
+  #icalClose{ background:#64748b; }
+  #icalConflicts{ margin-top:14px; }
+  #icalConflicts .c{
+    background:#fff4f4; border-right:4px solid #c62828; border-radius:8px;
+    padding:8px 10px; font-size:12px; margin-bottom:6px;
+  }
+  /* علامات مصدر الحجز على أيام التقويم */
+  .day.is-booked{ border-color:transparent !important; }
+  .day.is-booked .booking-line{ font-weight:bold; font-size:11px; line-height:1.25; }
+  .investor-mark{
+    position:absolute; top:5px; left:5px; width:7px; height:7px;
+    border-radius:50%; background:#000;
+  }
+  .period-btn{
+    border:1px solid #cbd5e1; background:#fff; color:#334155;
+    border-radius:10px; padding:10px 4px; font-size:13px; font-family:inherit;
+    cursor:pointer; transition:background .12s, color .12s, border-color .12s;
+  }
+  .period-btn.active{ background:#004d99; border-color:#004d99; color:#fff; font-weight:bold; }
+  .period-btn:focus-visible{ outline:3px solid #ffb000; outline-offset:2px; }
+  .plat-dot{
+    width:8px; height:8px; border-radius:50%; display:inline-block;
+    box-shadow:0 0 0 1.5px #fff;
+  }
+  .plat-dot.booking{ background:#003580; }   /* بوكينج - كحلي */
+  .plat-dot.airbnb{ background:#ff5a5f; }    /* ايربنب - أحمر مرجاني */
+  .plat-dot.masarrah{ background:#0a8f4d; }  /* مسرّة - أخضر */
+  .plat-dot.manual{ background:#f2c200; }    /* حجز داخلي (المالك) - أصفر */
+  .plat-dot.investor{                        /* مستثمر - أصفر بنقطة سوداء */
+    background:#f2c200;
+    background-image: radial-gradient(circle at 50% 50%, #000 0 2px, transparent 2px);
+  }
+  .plat-dots{
+    position:absolute; bottom:5px; left:0; right:0;
+    display:flex; justify-content:center; gap:4px; pointer-events:none;
+  }
+</style>
+
+<button id="icalFab" title="مزامنة التقويم" aria-label="مزامنة التقويم">🔗</button>
+
+<div id="icalPanel" role="dialog" aria-modal="true" aria-label="مزامنة التقويم">
+  <div class="sheet">
+    <h3>مزامنة التقويم</h3>
+    <div class="sub" id="icalPropName"></div>
+
+    <div id="icalPlatforms"></div>
+
+    <div class="actions">
+      <button id="icalSave">حفظ الروابط</button>
+      <button id="icalSyncBtn">مزامنة الآن</button>
+      <button id="icalClose">إغلاق</button>
+    </div>
+    <div class="status" id="icalGlobalStatus"></div>
+
+    <div style="margin-top:16px; padding-top:12px; border-top:1px solid #e2e8f0; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="mini ghost" id="acctBio">👆 البصمة</button>
+      <button class="mini ghost" id="acctLock">🔒 قفل التطبيق</button>
+      <button class="mini ghost" id="acctOut" style="background:#fde2e2; color:#a11;">خروج</button>
+    </div>
+
+    <div id="icalConflicts"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ⚠️ بدّل هذا بعد النشر، مثال:
+  // https://us-central1-santorini-chalet.cloudfunctions.net
+  const FUNCTIONS_BASE = "https://us-central1-santorini-chalet.cloudfunctions.net";
+
+  const PLATFORMS = [
+    { key: "booking",  name: "Booking.com", color: "#003580" },
+    { key: "airbnb",   name: "Airbnb",      color: "#ff5a5f" },
+    { key: "masarrah", name: "مسرّة",       color: "#0a8f4d" },
+  ];
+  const PROP_NAMES = { chalet: "سنتوريني", apartment: "السيفة", salalah: "صلالة" };
+
+  let token = null;
+
+  function prop() {
+    return (typeof currentProperty !== "undefined" && currentProperty) || "chalet";
+  }
+
+  function randomToken() {
+    const a = new Uint8Array(24);
+    crypto.getRandomValues(a);
+    return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function ensureToken() {
+    if (token) return token;
+    const ref = db.collection("ical_config").doc("_global");
+    let snap = null;
+    try {
+      snap = await ref.get();
+    } catch (e) {
+      throw new Error("تعذّرت قراءة ical_config — الغالب أن قواعد Firestore تمنعها. " + e.message);
+    }
+    if (snap.exists && snap.data().token) {
+      token = snap.data().token;
+      return token;
+    }
+    token = randomToken();
+    try {
+      await ref.set({ token }, { merge: true });
+    } catch (e) {
+      throw new Error("تعذّر حفظ الرمز في ical_config — قواعد Firestore تمنع الكتابة. " + e.message);
+    }
+    return token;
+  }
+
+  function exportUrl(p, target) {
+    return `${FUNCTIONS_BASE}/icalExport?p=${p}&for=${target}&t=${token}`;
+  }
+
+  function buildPlatformCards(cfg, states) {
+    const p = prop();
+    const wrap = document.getElementById("icalPlatforms");
+    wrap.innerHTML = "";
+
+    PLATFORMS.forEach((pl) => {
+      const saved = (cfg.imports || []).find((i) => i.platform === pl.key) || {};
+      const st = states[pl.key] || {};
+      const box = document.createElement("div");
+      box.className = "plat";
+      box.innerHTML = `
+        <h4><span class="swatch" style="background:${pl.color}"></span>${pl.name}</h4>
+        <label>رابط الاستيراد (انسخه من ${pl.name} والصقه هنا)</label>
+        <input type="text" id="in_${pl.key}" placeholder="https://..." value="${saved.url ? String(saved.url).replace(/"/g, "&quot;") : ""}">
+        <label>رابط التصدير (الصقه داخل ${pl.name})</label>
+        <div class="row">
+          <input type="text" readonly id="out_${pl.key}" value="${exportUrl(p, pl.key)}">
+          <button class="mini ghost" data-copy="out_${pl.key}">نسخ</button>
+        </div>
+        <div class="status ${st.lastError ? "err" : ""}" id="st_${pl.key}">
+          ${st.lastError ? "آخر خطأ: " + st.lastError : st.updatedAt ? "آخر مزامنة: " + new Date(st.updatedAt).toLocaleString("ar-OM") : "لم تتم مزامنة بعد"}
+        </div>`;
+      wrap.appendChild(box);
+    });
+
+    wrap.querySelectorAll("[data-copy]").forEach((btn) => {
+      btn.onclick = () => {
+        const el = document.getElementById(btn.dataset.copy);
+        navigator.clipboard.writeText(el.value);
+        btn.textContent = "تم";
+        setTimeout(() => (btn.textContent = "نسخ"), 1500);
+      };
+    });
+  }
+
+  async function loadConflicts() {
+    const box = document.getElementById("icalConflicts");
+    box.innerHTML = "";
+    const snap = await db
+      .collection("ical_conflicts")
+      .where("property", "==", prop())
+      .where("resolved", "==", false)
+      .limit(20)
+      .get();
+    if (snap.empty) return;
+    const title = document.createElement("div");
+    title.innerHTML = "<b style='color:#c62828'>تعارضات تحتاج مراجعة</b>";
+    box.appendChild(title);
+    snap.forEach((d) => {
+      const c = d.data();
+      const el = document.createElement("div");
+      el.className = "c";
+      el.textContent = `${c.date} — حجز ${c.platformLabel} لم يُكتب لأن اليوم محجوز مسبقاً (${c.existingSource})`;
+      box.appendChild(el);
+    });
+  }
+
+  async function openPanel() {
+    // نفتح اللوحة أولاً حتى لو فشل التحميل، عشان يظهر سبب المشكلة بدل ما ما يصير شيء
+    const panel = document.getElementById("icalPanel");
+    panel.style.display = "block";
+
+    const p = prop();
+    document.getElementById("icalPropName").textContent = PROP_NAMES[p] || p;
+    document.getElementById("icalPlatforms").innerHTML =
+      '<div class="status">جارٍ التحميل…</div>';
+    setStatus("");
+
+    if (typeof firebase === "undefined" || typeof db === "undefined") {
+      document.getElementById("icalPlatforms").innerHTML = "";
+      setStatus("Firebase غير محمّل في هذه الصفحة. تأكد من اتصالك بالإنترنت ثم أعد التحميل.", true);
+      return;
+    }
+
+    try {
+      await ensureToken();
+    } catch (e) {
+      document.getElementById("icalPlatforms").innerHTML = "";
+      setStatus(e.message, true);
+      console.error("[iCal] ensureToken:", e);
+      return;
+    }
+
+    let cfg = {};
+    const states = {};
+    try {
+      const cfgSnap = await db.collection("ical_config").doc(p).get();
+      cfg = cfgSnap.exists ? cfgSnap.data() : {};
+      for (const pl of PLATFORMS) {
+        const s = await db.collection("ical_state").doc(`${p}__${pl.key}`).get();
+        if (s.exists) states[pl.key] = s.data();
+      }
+    } catch (e) {
+      setStatus("تعذّر تحميل الإعدادات: " + e.message, true);
+      console.error("[iCal] load config:", e);
+    }
+
+    buildPlatformCards(cfg, states);
+
+    try {
+      await loadConflicts();
+    } catch (e) {
+      console.warn("[iCal] conflicts:", e);
+    }
+  }
+
+  async function savePanel() {
+    const p = prop();
+    const imports = PLATFORMS.map((pl) => ({
+      platform: pl.key,
+      url: document.getElementById(`in_${pl.key}`).value.trim(),
+      enabled: !!document.getElementById(`in_${pl.key}`).value.trim(),
+    })).filter((i) => i.url);
+
+    try {
+      await db.collection("ical_config").doc(p).set({ imports }, { merge: true });
+      setStatus("تم حفظ الروابط");
+    } catch (e) {
+      setStatus("تعذّر الحفظ: " + e.message, true);
+      console.error("[iCal] save:", e);
+    }
+  }
+
+  function setStatus(msg, isErr) {
+    const el = document.getElementById("icalGlobalStatus");
+    el.textContent = msg;
+    el.className = "status" + (isErr ? " err" : "");
+  }
+
+  async function syncNow() {
+    setStatus("جارٍ المزامنة…");
+    try {
+      const res = await fetch(`${FUNCTIONS_BASE}/icalSyncNow?t=${token}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "فشل");
+      setStatus(data.report.join(" • ") || "تمت المزامنة");
+      await loadConflicts();
+      if (typeof renderCalendar === "function") renderCalendar();
+    } catch (e) {
+      setStatus("فشلت المزامنة: " + e.message, true);
+    }
+  }
+
+  document.getElementById("icalFab").onclick = () => {
+    openPanel().catch((e) => {
+      console.error("[iCal] openPanel:", e);
+      setStatus("خطأ غير متوقع: " + e.message, true);
+    });
+  };
+  document.getElementById("icalClose").onclick = () =>
+    (document.getElementById("icalPanel").style.display = "none");
+  document.getElementById("icalSave").onclick = savePanel;
+  document.getElementById("icalSyncBtn").onclick = syncNow;
+
+  const bioBtn = document.getElementById("acctBio");
+  function refreshBioLabel() {
+    if (!bioBtn) return;
+    const on = typeof nuzulHasBiometric === "function" && nuzulHasBiometric();
+    bioBtn.textContent = on ? "👆 إلغاء البصمة" : "👆 تفعيل البصمة";
+  }
+  refreshBioLabel();
+  if (bioBtn) bioBtn.onclick = async () => {
+    if (typeof nuzulHasBiometric !== "function") return;
+    if (nuzulHasBiometric()) nuzulDisableBiometric();
+    else await nuzulRegisterBiometric();
+    refreshBioLabel();
+  };
+  const lockBtn = document.getElementById("acctLock");
+  if (lockBtn) lockBtn.onclick = () => { if (typeof nuzulLock === "function") nuzulLock(); };
+  const outBtn = document.getElementById("acctOut");
+  if (outBtn) outBtn.onclick = () => {
+    if (confirm("تسجيل الخروج من هذا الجهاز؟") && typeof nuzulSignOut === "function") nuzulSignOut();
+  };
+  document.getElementById("icalPanel").addEventListener("click", (e) => {
+    if (e.target.id === "icalPanel") e.currentTarget.style.display = "none";
+  });
+})();
+</script>
+
+<!-- ===== الشريط السفلي الثابت ===== -->
+<style>
+  body{ padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
+  #tabBar{
+    position:fixed; left:0; right:0; bottom:0; z-index:9500; direction:rtl;
+    display:grid; grid-template-columns:repeat(5,1fr);
+    background:#fff; border-top:1px solid #e2e8f0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow:0 -2px 12px rgba(0,0,0,.08);
+  }
+  #tabBar button{
+    border:none; background:transparent; cursor:pointer; font-family:inherit;
+    padding:8px 2px 10px; display:flex; flex-direction:column; align-items:center; gap:3px;
+    color:#5b6b80; font-size:11px; line-height:1;
+  }
+  #tabBar button .ic{ font-size:19px; line-height:1; }
+  #tabBar button:active{ background:#f1f5f9; }
+  #tabBar button:focus-visible{ outline:3px solid #ffb000; outline-offset:-3px; }
+  #moreSheet{ position:fixed; inset:0; z-index:9600; display:none; background:rgba(0,0,0,.45); }
+  #moreSheet .sheet{
+    position:absolute; left:0; right:0; bottom:0; background:#fff; direction:rtl;
+    border-radius:18px 18px 0 0; padding:14px 14px calc(18px + env(safe-area-inset-bottom,0px));
+  }
+  #moreSheet button{
+    width:100%; border:none; background:#f4f7fb; color:#0f2f57; font-family:inherit;
+    font-size:15px; text-align:right; padding:14px; border-radius:12px; margin-bottom:9px; cursor:pointer;
+  }
+</style>
+
+<nav id="tabBar" aria-label="التنقل">
+  <button id="tabToday"><span class="ic">📅</span>اليوم</button>
+  <button id="tabSearch"><span class="ic">🔍</span>بحث</button>
+  <button id="tabReport"><span class="ic">📊</span>التقرير</button>
+  <button id="tabExpenses"><span class="ic">💰</span>المصروفات</button>
+  <button id="tabMore"><span class="ic">☰</span>المزيد</button>
+</nav>
+
+<div id="moreSheet" role="dialog" aria-modal="true" aria-label="المزيد">
+  <div class="sheet">
+    <button id="moreDashboard">📊 لوحة التحكم</button>
+    <button id="moreSync">🔗 مزامنة التقويم</button>
+    <button id="moreNotif">🔔 إشعارات الوصول</button>
+    <button id="moreClose" style="background:#e2e8f0; color:#334155;">إغلاق</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const click = id => { const el = document.getElementById(id); if (el) el.click(); };
+  const sheet = () => document.getElementById('moreSheet');
+
+  document.getElementById('tabToday').onclick = () => click('goToToday');
+  document.getElementById('tabSearch').onclick = () => click('searchFab');
+  document.getElementById('tabReport').onclick = () => {
+    if (typeof generateReport === 'function') generateReport();
+  };
+  document.getElementById('tabExpenses').onclick = () => {
+    if (typeof openExpenses !== 'function') return;
+    const y = (typeof currentViewYear !== 'undefined') ? currentViewYear : new Date().getFullYear();
+    const m = (typeof currentViewMonth !== 'undefined') ? currentViewMonth : new Date().getMonth() + 1;
+    openExpenses(y, String(m).padStart(2, '0'));
+  };
+
+  document.getElementById('tabMore').onclick = () => sheet().style.display = 'block';
+  document.getElementById('moreClose').onclick = () => sheet().style.display = 'none';
+  sheet().addEventListener('click', e => { if (e.target.id === 'moreSheet') e.currentTarget.style.display = 'none'; });
+
+  document.getElementById('moreDashboard').onclick = () => {
+    sheet().style.display = 'none';
+    if (typeof openDashboard === 'function') openDashboard();
+  };
+  document.getElementById('moreSync').onclick = () => { sheet().style.display = 'none'; click('icalFab'); };
+  document.getElementById('moreNotif').onclick = () => { sheet().style.display = 'none'; click('notifFab'); };
+})();
+</script>
+
+<!-- ===== البحث عن الضيوف والحجوزات ===== -->
+<style>
+  #searchFab{
+    display:none;
+    position:fixed; bottom:142px; left:18px; z-index:9998;
+    width:52px; height:52px; border-radius:50%; border:none;
+    background:#004d99; color:#fff; font-size:21px; cursor:pointer;
+    box-shadow:0 4px 14px rgba(0,0,0,.28);
+  }
+  #searchFab:focus-visible{ outline:3px solid #ffb000; outline-offset:2px; }
+  #searchPanel{ position:fixed; inset:0; z-index:9999; display:none; background:rgba(0,0,0,.45); overflow-y:auto; padding:14px; }
+  #searchPanel .sheet{ max-width:560px; margin:18px auto; background:#fff; border-radius:18px; padding:16px; direction:rtl; text-align:right; }
+  #searchPanel h3{ margin:0 0 10px; color:#00366e; }
+  #searchInput{ width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:10px; font-size:15px; font-family:inherit; }
+  #searchHint{ font-size:12px; color:#64748b; margin-top:6px; }
+  .g-card{ border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:12px; }
+  .g-head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .g-name{ font-weight:bold; font-size:15px; color:#00366e; }
+  .g-meta{ font-size:12px; color:#64748b; }
+  .g-stats{ display:flex; gap:14px; flex-wrap:wrap; font-size:12px; margin:8px 0 4px; }
+  .g-stats b{ color:#0f172a; }
+  .b-row{ display:flex; align-items:center; gap:8px; padding:7px 0; border-top:1px dashed #e2e8f0; font-size:13px; cursor:pointer; }
+  .b-row:hover{ background:#f8fafc; }
+  .b-dot{ width:9px; height:9px; border-radius:50%; flex:0 0 auto; }
+  .b-when{ font-variant-numeric:tabular-nums; color:#334155; }
+  .b-prop{ color:#64748b; font-size:12px; }
+  .b-amt{ margin-inline-start:auto; font-weight:bold; color:#0f172a; white-space:nowrap; }
+  .b-due{ color:#c62828; font-weight:normal; font-size:12px; }
+  #searchClose{ width:100%; margin-top:14px; border:none; border-radius:10px; padding:11px; background:#64748b; color:#fff; font-size:14px; cursor:pointer; }
+</style>
+
+<button id="searchFab" title="بحث عن ضيف" aria-label="بحث عن ضيف">🔍</button>
+
+<div id="searchPanel" role="dialog" aria-modal="true" aria-label="بحث">
+  <div class="sheet">
+    <h3>بحث عن ضيف أو حجز</h3>
+    <input id="searchInput" type="search" placeholder="اسم الضيف أو رقم الهاتف" autocomplete="off"/>
+    <div id="searchHint">اكتب حرفين على الأقل، أو ثلاثة أرقام من الهاتف.</div>
+    <div id="searchResults"></div>
+    <button id="searchClose">إغلاق</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const PROPS = [
+    { key: 'chalet',    col: 'calendar2025',           label: 'سنتوريني', model: 'day' },
+    { key: 'apartment', col: 'calendar2025_apartment', label: 'السيفة',   model: 'day' },
+    { key: 'salalah',   col: 'calendar2025_salalah',   label: 'صلالة',    model: 'range' }
+  ];
+  const PERIODS = { morning: 'صباح', evening: 'مساء', fullDay: 'يوم كامل', overnight: 'مبيت' };
+  const DOT = { booking: '#003580', airbnb: '#ff5a5f', masarrah: '#0a8f4d', investor: '#f2c200', manual: '#f2c200' };
+
+  let cache = null;
+
+  function norm(v) {
+    return String(v || '')
+      .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+      .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
+      .replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  function digits(v) {
+    return String(v || '')
+      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+      .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+      .replace(/\D/g, '');
+  }
+  const isDate = id => /^\d{4}-\d{2}-\d{2}$/.test(id);
+  const money = n => (parseFloat(n) || 0).toFixed(2);
+
+  function platKey(b) {
+    if (b.icalPlatform) return b.icalPlatform;
+    const src = norm(b.source);
+    if (src.indexOf('بوكينج') !== -1) return 'booking';
+    if (src.indexOf('ايربنب') !== -1) return 'airbnb';
+    if (src.indexOf('مسره') !== -1) return 'masarrah';
+    return 'manual';
+  }
+
+  async function loadAll() {
+    if (cache) return cache;
+    const out = [];
+    for (const p of PROPS) {
+      const snap = await db.collection(p.col).get();
+      snap.forEach(doc => {
+        const data = doc.data() || {};
+        if (p.model === 'day') {
+          if (!isDate(doc.id)) return;               // يتجاهل المستندات التالفة
+          Object.keys(PERIODS).forEach(per => {
+            const b = data[per];
+            if (!b || !b.status || (b.status.trim() !== 'محجوز' && b.status.trim() !== 'عربون')) return;
+            out.push({
+              prop: p.key, propLabel: p.label, model: 'day',
+              date: doc.id, when: doc.id, period: PERIODS[per],
+              name: b.guestName || '', phone: b.guestPhone || '',
+              amount: parseFloat(b.amount) || 0,
+              paid: (typeof paidOf === 'function') ? paidOf(b) : (parseFloat(b.paid) || 0),
+              source: b.source || '', plat: platKey(b)
+            });
+          });
+        } else {
+          const b = data;
+          if (!b.status || (b.status.trim() !== 'محجوز' && b.status.trim() !== 'عربون')) return;
+          if (!b.checkin) return;
+          out.push({
+            prop: p.key, propLabel: p.label, model: 'range',
+            date: b.checkin, when: b.checkin + ' ← ' + (b.checkout || ''), period: '',
+            name: b.guestName || '', phone: b.guestPhone || '',
+            amount: parseFloat(b.amount) || 0,
+            paid: (typeof paidOf === 'function') ? paidOf(b) : (parseFloat(b.paid) || 0),
+            source: b.source || '', plat: platKey(b)
+          });
+        }
+      });
+    }
+    cache = out;
+    return out;
+  }
+
+  function jump(r) {
+    document.getElementById('searchPanel').style.display = 'none';
+    const [y, m] = r.date.split('-').map(Number);
+    try { if (currentProperty !== r.prop) switchProperty(r.prop); } catch (e) {}
+    if (r.model === 'range') {
+      setTimeout(() => { try { window.openSalalahPopup(r.date, true); } catch (e) {} }, 500);
+      return;
+    }
+    try {
+      currentViewYear = y; currentViewMonth = m;
+      buildCalendar(y, m - 1);
+    } catch (e) {}
+    setTimeout(() => {
+      const el = document.querySelector('.day[data-date="' + r.date + '"]');
+      if (el) el.click();
+    }, 650);
+  }
+
+  function render(rows, q) {
+    const box = document.getElementById('searchResults');
+    box.innerHTML = '';
+    if (!rows.length) {
+      box.innerHTML = '<div style="padding:16px 4px; color:#64748b; font-size:14px;">لا نتائج مطابقة.</div>';
+      return;
+    }
+
+    const groups = new Map();
+    rows.forEach(r => {
+      const key = norm(r.name) || digits(r.phone) || 'بلا اسم';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(r);
+    });
+
+    const sorted = [...groups.entries()].sort((a, b) => {
+      const la = a[1].map(x => x.date).sort().pop();
+      const lb = b[1].map(x => x.date).sort().pop();
+      return lb.localeCompare(la);
+    });
+
+    sorted.forEach(([, list]) => {
+      list.sort((a, b) => b.date.localeCompare(a.date));
+      const name = list.find(x => x.name)?.name || 'بلا اسم';
+      const phone = list.find(x => x.phone)?.phone || '';
+      const total = list.reduce((s, x) => s + x.amount, 0);
+      const paid = list.reduce((s, x) => s + x.paid, 0);
+      const due = total - paid;
+
+      const card = document.createElement('div');
+      card.className = 'g-card';
+      card.innerHTML =
+        '<div class="g-head"><span class="g-name">' + name + '</span>' +
+        (phone ? '<span class="g-meta">' + phone + '</span>' : '') + '</div>' +
+        '<div class="g-stats">' +
+          '<span>الزيارات: <b>' + list.length + '</b></span>' +
+          '<span>الإجمالي: <b>' + money(total) + '</b> ر.ع</span>' +
+          (due > 0.001 ? '<span style="color:#c62828;">مستحق: <b>' + money(due) + '</b> ر.ع</span>' : '') +
+          '<span>آخر زيارة: <b>' + list[0].date + '</b></span>' +
+        '</div>';
+
+      list.forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'b-row';
+        const rowDue = r.amount - r.paid;
+        row.innerHTML =
+          '<span class="b-dot" style="background:' + (DOT[r.plat] || '#94a3b8') + '"></span>' +
+          '<span class="b-when">' + r.when + '</span>' +
+          '<span class="b-prop">' + r.propLabel + (r.period ? ' · ' + r.period : '') + '</span>' +
+          '<span class="b-amt">' + money(r.amount) + ' ر.ع' +
+            (rowDue > 0.001 ? ' <span class="b-due">(متبقي ' + money(rowDue) + ')</span>' : '') +
+          '</span>';
+        row.onclick = () => jump(r);
+        card.appendChild(row);
+      });
+
+      box.appendChild(card);
+    });
+  }
+
+  let timer = null;
+  async function doSearch() {
+    const q = document.getElementById('searchInput').value.trim();
+    const box = document.getElementById('searchResults');
+    const qd = digits(q);
+    if (norm(q).length < 2 && qd.length < 3) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div style="padding:16px 4px; color:#64748b; font-size:14px;">جارٍ البحث…</div>';
+    try {
+      const all = await loadAll();
+      const nq = norm(q);
+      const rows = all.filter(r => {
+        if (nq.length >= 2 && norm(r.name).indexOf(nq) !== -1) return true;
+        if (qd.length >= 3 && digits(r.phone).indexOf(qd) !== -1) return true;
+        return false;
+      });
+      render(rows, q);
+    } catch (e) {
+      console.error('[search]', e);
+      box.innerHTML = '<div style="padding:16px 4px; color:#c62828; font-size:14px;">تعذّر البحث: ' + e.message + '</div>';
+    }
+  }
+
+  document.getElementById('searchFab').onclick = () => {
+    cache = null;                                  // بيانات طازجة عند كل فتح
+    document.getElementById('searchPanel').style.display = 'block';
+    const i = document.getElementById('searchInput');
+    i.value = ''; document.getElementById('searchResults').innerHTML = '';
+    setTimeout(() => i.focus(), 100);
+  };
+  document.getElementById('searchClose').onclick = () =>
+    (document.getElementById('searchPanel').style.display = 'none');
+  document.getElementById('searchPanel').addEventListener('click', e => {
+    if (e.target.id === 'searchPanel') e.currentTarget.style.display = 'none';
+  });
+  document.getElementById('searchInput').addEventListener('input', () => {
+    clearTimeout(timer); timer = setTimeout(doSearch, 250);
+  });
+})();
+</script>
+
+<!-- ===== إشعارات وصول الضيوف ===== -->
+<style>
+  #notifFab{
+    display:none;
+    position:fixed; bottom:80px; left:18px; z-index:9998;
+    width:52px; height:52px; border-radius:50%; border:none;
+    background:#e2e8f0; color:#334155; font-size:22px; cursor:pointer;
+    box-shadow:0 4px 14px rgba(0,0,0,.28);
+  }
+  #notifFab.on{ background:#00794f; color:#fff; }
+  #notifFab:focus-visible{ outline:3px solid #ffb000; outline-offset:2px; }
+</style>
+
+<button id="notifFab" title="تفعيل إشعارات الوصول" aria-label="تفعيل إشعارات الوصول">🔔</button>
+
+<script>
+(function () {
+  // ⚠️ ضع هنا مفتاح Web Push من Firebase Console
+  // Project settings ← Cloud Messaging ← Web Push certificates ← Generate key pair
+  const VAPID_KEY = "BNxGn0PPjhHK2somHBziGieEn_4r9lLlJSoDqSfgnQQPD54BBolY4bFB-7Z9jJvlXA5VmxuZFMuALrcviaovotc";
+
+  const fab = document.getElementById("notifFab");
+
+  function markState(on) {
+    fab.classList.toggle("on", !!on);
+    fab.title = on ? "الإشعارات مفعّلة على هذا الجهاز" : "تفعيل إشعارات الوصول";
+  }
+
+  function supported() {
+    return "Notification" in window &&
+           "serviceWorker" in navigator &&
+           typeof firebase !== "undefined" &&
+           firebase.messaging &&
+           firebase.messaging.isSupported &&
+           firebase.messaging.isSupported();
+  }
+
+  async function enableNotifications(interactive) {
+    if (!supported()) {
+      if (interactive) alert("هذا المتصفح لا يدعم الإشعارات. على الآيفون لازم تضيف التطبيق للشاشة الرئيسية أولاً.");
+      return;
+    }
+    if (VAPID_KEY.indexOf("ضع_المفتاح") === 0) {
+      if (interactive) alert("مفتاح الإشعارات غير مضبوط في الكود بعد.");
+      return;
+    }
+
+    try {
+      if (Notification.permission === "denied") {
+        if (interactive) alert("الإشعارات محظورة لهذا الموقع. فعّلها من إعدادات المتصفح ثم أعد المحاولة.");
+        return;
+      }
+      if (Notification.permission !== "granted") {
+        if (!interactive) return;           // الإذن يحتاج ضغطة من المستخدم
+        const perm = await Notification.requestPermission();
+        if (perm !== "granted") return;
+      }
+
+      const reg = await navigator.serviceWorker.register("firebase-messaging-sw.js");
+      await navigator.serviceWorker.ready;
+
+      const messaging = firebase.messaging();
+      const token = await messaging.getToken({
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: reg
+      });
+      if (!token) throw new Error("لم يصدر رمز جهاز");
+
+      await db.collection("fcm_tokens").doc(token).set({
+        updatedAt: new Date().toISOString(),
+        ua: navigator.userAgent.slice(0, 160)
+      }, { merge: true });
+
+      markState(true);
+      if (interactive) alert("تم تفعيل الإشعارات على هذا الجهاز.");
+
+      // إشعار وصل والتطبيق مفتوح
+      messaging.onMessage(payload => {
+        const n = (payload && payload.notification) || {};
+        if (typeof toast === "function") {
+          toast((n.title || "تنبيه") + " — " + (n.body || ""), "info");
+        } else {
+          alert((n.title || "تنبيه") + "\n" + (n.body || ""));
+        }
+      });
+    } catch (e) {
+      console.error("[notif]", e);
+      if (interactive) alert("تعذّر تفعيل الإشعارات: " + e.message);
+    }
+  }
+
+  fab.onclick = () => enableNotifications(true);
+
+  // تجديد صامت للرمز عند كل فتح، إن كان الإذن ممنوحاً مسبقاً
+  if ("Notification" in window && Notification.permission === "granted") {
+    markState(true);
+    enableNotifications(false);
+  }
+})();
+</script>
+</body>
+</html>
